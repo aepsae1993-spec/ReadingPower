@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+body {
+  color: #cdd5f5;
+  background:
+    radial-gradient(900px 480px at 8% -8%, rgba(99,102,241,.22) 0%, transparent 60%),
+    radial-gradient(800px 460px at 100% 0%, rgba(217,70,239,.18) 0%, transparent 55%),
+    radial-gradient(700px 500px at 50% 120%, rgba(34,211,238,.12) 0%, transparent 55%),
+    #06060f;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* faint game grid */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148,163,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148,163,255,.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 80%);
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-slate-900/60 backdrop-blur-xl shadow-card ring-1 ring-white/10;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+  .stat-num { @apply text-3xl font-extrabold tracking-tight text-ink; }
+}
+
+*::-webkit-scrollbar { height: 8px; width: 8px; }
+*::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+::selection { background: rgba(167,139,250,.35); }
