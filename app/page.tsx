@@ -14,9 +14,18 @@ export default async function SchoolPage() {
   const highestSet = startedSets.length ? Math.max(...startedSets) : 0;
   const avgPercent = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / rows.length);
 
+  // คนเก่งสุดของชั้น = ไปถึงชุดสูงสุด, ชุดเท่ากันดูด่าน, ด่านเท่ากันดูบท
+  const setReached = (p: (typeof rows)[number]["progress"]) => (p.isMaxed ? MAX_SET : p.started ? p.currentSet : 0);
+  const isAhead = (a: (typeof rows)[number], b: (typeof rows)[number]) => {
+    const sa = setReached(a.progress), sb = setReached(b.progress);
+    if (sa !== sb) return sa > sb;
+    if (a.progress.currentStage !== b.progress.currentStage) return a.progress.currentStage > b.progress.currentStage;
+    return a.progress.currentChapter > b.progress.currentChapter;
+  };
+
   const byGrade = Array.from({ length: 6 }, (_, i) => i + 1).map((g) => {
     const list = rows.filter((r) => r.grade === g);
-    const best = list[0];
+    const best = list.reduce<(typeof rows)[number] | undefined>((b, r) => (!b || isAhead(r, b) ? r : b), undefined);
     return { g, count: list.length, best, avg: Math.round(list.reduce((a, r) => a + r.progress.percent, 0) / (list.length || 1)) };
   });
 
