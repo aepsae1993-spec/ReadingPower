@@ -9,6 +9,7 @@ export async function updateSession(request: NextRequest) {
   if (!URL || !KEY) return response; // โหมดเดโม: ไม่บังคับล็อกอิน
 
   const supabase = createServerClient(URL, KEY, {
+    cookieOptions: { maxAge: 60 * 60 * 24 * 400, sameSite: "lax", path: "/" },
     cookies: {
       getAll() { return request.cookies.getAll(); },
       setAll(toSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
