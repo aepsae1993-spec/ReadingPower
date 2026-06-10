@@ -1,4 +1,4 @@
-﻿-- ใส่รายชื่อนักเรียน ป.1-ป.6 (เรียงตามเลขที่) จากไฟล์ รายชื่อนร2.xlsx
+-- ใส่รายชื่อนักเรียน ป.1-ป.6 (เรียงตามเลขที่) จากไฟล์ รายชื่อนร2.xlsx
 -- รันใน Supabase > SQL Editor
 
 alter table public.students add column if not exists no smallint;
