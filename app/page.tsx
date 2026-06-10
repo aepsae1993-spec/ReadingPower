@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getAllStudents } from "@/lib/data.server";
-import { gradeName, tier } from "@/lib/design";
+import { gradeName } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
-import { ProgressBar, PositionPill, RankMedal, TierBadge } from "@/components/ui";
+import { ProgressBar, PositionPill, RankMedal, RankEmblem, TierBadge } from "@/components/ui";
 import { Crown, Users, Flame, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +25,12 @@ export default async function SchoolPage() {
     <div className="space-y-6">
       {/* Hero */}
       <section className="card overflow-hidden">
-        <div className="relative bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 px-6 py-7 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 px-6 py-7 text-white">
           <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[18%] top-[26%] h-px w-80 rotate-[-18deg] bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[1px]" />
+            <div className="absolute right-[18%] top-[26%] h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_14px_5px_rgba(255,255,255,.85)]" />
+          </div>
           <div className="relative flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-white/80">แดชบอร์ดประจำโรงเรียน</div>
@@ -48,14 +52,14 @@ export default async function SchoolPage() {
         <div className="grid grid-cols-3 gap-3">
           {podiumOrder.map((r) => {
             const place = r.rank!;
-            const t = tier(r.progress.isMaxed ? MAX_SET : r.progress.currentSet);
+            const set = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
             return (
-              <Link key={r.id} href={`/student/${r.id}`} className={`card group p-4 text-center transition hover:-translate-y-0.5 ${place === 1 ? "sm:-mt-4 ring-2 ring-yellow-300" : ""}`}>
-                <span className={`mx-auto mb-2 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br text-2xl shadow-glow ${t.grad}`}>{place === 1 ? "👑" : t.emoji}</span>
-                <div className="truncate text-sm font-bold text-ink">{r.name}</div>
+              <Link key={r.id} href={`/student/${r.id}`} className={`card group relative overflow-hidden p-5 text-center transition hover:-translate-y-1 ${place === 1 ? "sm:-mt-5 card-glow" : ""}`}>
+                {place === 1 && <span className="absolute right-[-34px] top-[18px] w-32 rotate-45 bg-gradient-to-r from-fuchsia-500 to-indigo-500 py-1 text-center text-[10px] font-extrabold tracking-widest text-white shadow">TOP</span>}
+                <RankEmblem rank={place} />
+                <div className="mt-1 truncate text-base font-bold text-ink">{r.name}</div>
                 <div className="text-xs text-slate-400">{gradeName(r.grade)}</div>
-                <div className="mt-2 flex justify-center"><TierBadge set={r.progress.isMaxed ? MAX_SET : r.progress.currentSet} size="sm" /></div>
-                <div className="mt-1 text-[11px] text-slate-400">อันดับ {place}</div>
+                <div className="mt-2 flex justify-center"><TierBadge set={set} size="sm" /></div>
               </Link>
             );
           })}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import Link from "next/link";
-import { Trophy, School, Sparkles } from "lucide-react";
+import { Trophy, School, BookOpenText } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
 import "./globals.css";
 
@@ -19,8 +19,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/60 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-glow">
-                <Sparkles size={18} />
+              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-glow ring-1 ring-white/20">
+                <BookOpenText size={20} className="drop-shadow" />
               </span>
               <div className="leading-tight">
                 <div className="text-sm font-extrabold text-ink">READING POWER</div>
