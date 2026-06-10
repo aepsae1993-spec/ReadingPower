@@ -25,6 +25,6 @@ export async function saveChapter(input: {
 
   const { error } = await sb.from("chapter_scores").upsert(payload, { onConflict: "student_id,set_no,stage,chapter" });
   if (error) return { ok: false, error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout"); // ล้าง cache ทุกหน้า (โรงเรียน/ห้อง/รายคน) ให้เห็นคะแนนใหม่
   return { ok: true, count: payload.length };
 }

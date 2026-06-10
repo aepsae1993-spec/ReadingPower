@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_noStore as noStore } from "next/cache";
 import { createClient, isConfigured } from "./supabase/server";
 import { buildMock } from "./mock";
 import { buildRows, StudentRow } from "./data";
@@ -7,6 +8,7 @@ import { ChapterResult, Student } from "./types";
 export const usingMock = () => !isConfigured();
 
 async function fetchAll(): Promise<{ students: Student[]; results: ChapterResult[] }> {
+  noStore(); // อ่านข้อมูลสดเสมอ ไม่ใช้ cache
   if (!isConfigured()) return buildMock();
   const sb = createClient();
   const [{ data: st }, { data: sc }] = await Promise.all([
