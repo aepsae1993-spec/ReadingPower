@@ -10,6 +10,7 @@ export default function EntrySelector({ grade, setNo, stage, chapter }: { grade:
     const ns = p.stage ?? stage;
     if (Number(q.get("chapter")) > stageChapters(ns as any)) q.set("chapter", "1");
     router.push(`/entry?${q.toString()}`);
+    router.refresh();
   };
   const sel = "rounded-lg border border-white/10 bg-slate-900/70 px-2.5 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-400/40";
   return (

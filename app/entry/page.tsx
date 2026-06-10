@@ -35,7 +35,7 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
         </div>
       </div>
 
-      <EntryGrid setNo={setNo} stage={stage} chapter={chapter} students={(students ?? []) as any} initial={initial} />
+      <EntryGrid key={`${grade}-${setNo}-${stage}-${chapter}`} setNo={setNo} stage={stage} chapter={chapter} students={(students ?? []) as any} initial={initial} />
     </div>
   );
 }
