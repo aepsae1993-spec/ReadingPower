@@ -14,6 +14,7 @@ create table if not exists public.students (
   name text not null,
   grade smallint not null check (grade between 1 and 6),
   room text,
+  no smallint, -- เลขที่
   active boolean default true,
   created_at timestamptz default now()
 );

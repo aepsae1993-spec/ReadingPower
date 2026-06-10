@@ -5,6 +5,7 @@ export interface Student {
   name: string;
   grade: number; // 1..6  (ป.1 - ป.6)
   room?: string; // e.g. "1" -> ป.4/1
+  no?: number;   // เลขที่
 }
 
 /** One graded chapter result (e.g. ชุด3 ด่าน1 บท12 = 18/20) */

@@ -10,7 +10,7 @@ export default async function StudentsPage() {
     return <div className="card p-8 text-center text-slate-300">โหมดเดโม — เชื่อมต่อ Supabase ก่อนจึงจะจัดการนักเรียนได้</div>;
   }
   const sb = createClient();
-  const { data: students } = await sb.from("students").select("id,name,grade").eq("active", true).order("grade").order("name");
+  const { data: students } = await sb.from("students").select("id,name,grade,no").eq("active", true).order("grade").order("no", { nullsFirst: false });
   const byGrade = (g: number) => (students ?? []).filter((s: any) => s.grade === g);
   const sel = "rounded-lg border border-white/10 bg-slate-900/70 px-2.5 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-400/40";
 
@@ -53,7 +53,7 @@ export default async function StudentsPage() {
             <ul className="divide-y divide-white/5">
               {list.map((s: any) => (
                 <li key={s.id} className="flex items-center justify-between px-4 py-2">
-                  <span className="text-slate-100">{s.name}</span>
+                  <span className="flex items-center gap-2 text-slate-100"><span className="w-6 text-right text-xs font-semibold text-slate-500">{s.no ?? "·"}</span> {s.name}</span>
                   <form action={removeStudent}>
                     <input type="hidden" name="id" value={s.id} />
                     <button className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/15 hover:text-rose-300" title="นำออก"><Trash2 size={15} /></button>

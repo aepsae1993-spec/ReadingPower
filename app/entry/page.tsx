@@ -16,7 +16,7 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
   const chapter = clamp(+(searchParams.chapter ?? 1), 1, stageChapters(stage as any));
 
   const sb = createClient();
-  const { data: students } = await sb.from("students").select("id,name").eq("active", true).eq("grade", grade).order("name");
+  const { data: students } = await sb.from("students").select("id,name,no").eq("active", true).eq("grade", grade).order("no", { nullsFirst: false });
   const { data: existing } = await sb.from("chapter_scores").select("student_id,items").eq("set_no", setNo).eq("stage", stage).eq("chapter", chapter);
   const initial: Record<string, number[] | null> = {};
   (existing ?? []).forEach((e: any) => (initial[e.student_id] = e.items ?? null));

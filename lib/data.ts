@@ -14,7 +14,11 @@ export function buildRows(students: Student[], results: ChapterResult[]): Studen
     byStu.get(r.studentId)!.push(r);
   }
   const rows: StudentRow[] = students.map((s) => ({ ...s, progress: computeProgress(byStu.get(s.id) ?? []) }));
-  rows.sort((a, b) => b.progress.rankValue - a.progress.rankValue || a.name.localeCompare(b.name, "th"));
+  rows.sort((a, b) =>
+    b.progress.rankValue - a.progress.rankValue ||
+    (a.no ?? 9999) - (b.no ?? 9999) ||
+    a.name.localeCompare(b.name, "th")
+  );
   rows.forEach((r, i) => (r.rank = i + 1));
   return rows;
 }
