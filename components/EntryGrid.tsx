@@ -37,13 +37,15 @@ export default function EntryGrid({ setNo, stage, chapter, students, initial }: 
 
   return (
     <div className="space-y-3">
-      <div className="card overflow-x-auto">
+      <div className="card overflow-auto max-h-[72vh]">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="text-slate-400">
-              <th className="sticky left-0 z-10 bg-slate-900/95 px-3 py-2 text-left font-semibold">ชื่อ-สกุล</th>
-              {Array.from({ length: N }, (_, i) => <th key={i} className="w-8 px-0 py-2 text-center text-[11px] font-semibold">{i + 1}</th>)}
-              <th className="px-2 py-2 text-center font-semibold">คะแนน</th>
+            <tr className="text-slate-300">
+              <th className="sticky left-0 top-0 z-30 border-b border-white/10 bg-slate-950 px-3 py-2.5 text-left font-bold">ชื่อ-สกุล</th>
+              {Array.from({ length: N }, (_, i) => (
+                <th key={i} className={`sticky top-0 z-20 w-9 border-b border-white/10 bg-slate-950 px-0 py-2.5 text-center text-xs font-bold ${i > 0 && i % 5 === 0 ? "border-l border-white/15" : ""}`}>{i + 1}</th>
+              ))}
+              <th className="sticky right-0 top-0 z-30 border-b border-l border-white/10 bg-slate-950 px-2 py-2.5 text-center font-bold">คะแนน</th>
             </tr>
           </thead>
           <tbody>
@@ -51,23 +53,23 @@ export default function EntryGrid({ setNo, stage, chapter, students, initial }: 
               const sc = r.items.reduce((a, b) => a + b, 0);
               const pass = sc / N >= PASS_RATIO;
               return (
-                <tr key={r.id} className="border-t border-white/5">
-                  <td className="sticky left-0 z-10 max-w-[180px] truncate bg-slate-900/95 px-3 py-1.5 font-medium text-slate-100">
-                    {r.name}
-                    <div className="flex gap-1 text-[10px]">
+                <tr key={r.id} className="group border-t border-white/5">
+                  <td className="sticky left-0 z-10 max-w-[190px] truncate bg-slate-950 px-3 py-1.5 font-medium text-slate-100 group-hover:bg-slate-900">
+                    <div className="flex items-center gap-1.5"><span className="text-xs tabular-nums text-slate-500">{si + 1}.</span> {r.name}</div>
+                    <div className="flex gap-2 pl-4 text-[10px]">
                       <button onClick={() => setAll(si, 1)} className="text-emerald-400 hover:underline">ถูกหมด</button>
                       <button onClick={() => setAll(si, 0)} className="text-rose-400 hover:underline">ล้าง</button>
                     </div>
                   </td>
                   {r.items.map((v, ci) => (
-                    <td key={ci} className="p-0.5 text-center">
+                    <td key={ci} className={`p-0.5 text-center transition group-hover:bg-indigo-500/10 ${ci > 0 && ci % 5 === 0 ? "border-l border-white/10" : ""}`}>
                       <button onClick={() => toggle(si, ci)}
-                        className={`h-6 w-6 rounded-md text-xs font-bold transition ${v ? "bg-emerald-500/80 text-white shadow-[0_0_8px_-2px_rgba(16,185,129,.8)]" : "bg-slate-800 text-slate-600 hover:bg-slate-700"}`}>
+                        className={`h-6 w-6 rounded-md text-xs font-bold transition ${v ? "bg-emerald-500/90 text-white shadow-[0_0_8px_-2px_rgba(16,185,129,.9)]" : "bg-slate-800 text-slate-600 hover:bg-slate-600"}`}>
                         {v ? "✓" : ""}
                       </button>
                     </td>
                   ))}
-                  <td className={`px-2 py-1.5 text-center font-extrabold ${pass ? "text-emerald-400" : "text-rose-400"}`}>
+                  <td className={`sticky right-0 z-10 border-l border-white/10 bg-slate-950 px-2 py-1.5 text-center font-extrabold group-hover:bg-slate-900 ${pass ? "text-emerald-400" : "text-rose-400"}`}>
                     {sc}/{N}<div className="text-[10px] font-semibold">{pass ? "ผ่าน" : "ไม่ผ่าน"}</div>
                   </td>
                 </tr>
