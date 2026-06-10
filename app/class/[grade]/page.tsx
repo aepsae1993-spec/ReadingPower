@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getClassStudents } from "@/lib/data.server";
 import { gradeName } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
-import { ProgressBar, PositionPill, RankMedal, StatCard, TierBadge } from "@/components/ui";
+import { ProgressBar, PositionPill, RankMedal, StatCard, LevelBadge } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,8 @@ export default async function ClassPage({ params }: { params: { grade: string } 
   if (!(grade >= 1 && grade <= 6)) notFound();
   const rows = await getClassStudents(grade);
   const avg = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / (rows.length || 1));
-  const topSet = Math.max(...rows.map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet)));
+  const startedSets = rows.filter((r) => r.progress.started).map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet));
+  const topSet = startedSets.length ? Math.max(...startedSets) : 0;
 
   return (
     <div className="space-y-6">
@@ -37,7 +38,7 @@ export default async function ClassPage({ params }: { params: { grade: string } 
         </div>
         <div className="grid grid-cols-3 gap-3 p-4">
           <StatCard label="นักเรียน" value={rows.length} accent="text-sky-300" />
-          <StatCard label="ชุดสูงสุดในห้อง" value={topSet} accent="text-indigo-300" />
+          <StatCard label="ชุดสูงสุดในห้อง" value={topSet || "-"} accent="text-indigo-300" />
           <StatCard label="ก้าวหน้าเฉลี่ย" value={`${avg}%`} accent="text-fuchsia-300" />
         </div>
       </section>
@@ -55,7 +56,7 @@ export default async function ClassPage({ params }: { params: { grade: string } 
                 <div className="mt-1 sm:hidden"><PositionPill p={r.progress} /></div>
               </div>
               <div className="hidden sm:block"><PositionPill p={r.progress} /></div>
-              <TierBadge set={r.progress.isMaxed ? MAX_SET : r.progress.currentSet} name={false} size="sm" />
+              <LevelBadge p={r.progress} name={false} size="sm" />
               <div className="w-28 shrink-0">
                 <ProgressBar value={r.progress.totalPassed} max={r.progress.grandTotal} />
                 <div className="mt-0.5 text-right text-[10px] text-slate-400">{r.progress.percent}%</div>

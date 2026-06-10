@@ -61,6 +61,7 @@ export function ProgressBar({ value, max, gradient = "from-indigo-500 to-fuchsia
 }
 
 export function PositionPill({ p }: { p: Progress }) {
+  if (!p.started) return <span className="chip bg-white/5 px-2.5 py-1 text-slate-500 ring-1 ring-white/10">ยังไม่เริ่ม</span>;
   if (p.isMaxed) return <span className="chip bg-purple-500/20 px-2.5 py-1 text-purple-200 ring-1 ring-purple-400/30">🏆 จบครบทุกชุด</span>;
   const s = STAGES[p.currentStage - 1];
   return (
@@ -68,6 +69,12 @@ export function PositionPill({ p }: { p: Progress }) {
       ด่าน {p.currentStage} · {s.short} · บท {p.currentChapter}
     </span>
   );
+}
+
+/** ป้ายระดับ: ยังไม่เริ่ม = เทา, เริ่มแล้ว = ป้ายชุด */
+export function LevelBadge({ p, name = true, size = "sm" }: { p: Progress; name?: boolean; size?: "sm" | "md" | "lg" }) {
+  if (!p.started) return <span className="chip bg-white/5 px-2.5 py-1 text-xs text-slate-500 ring-1 ring-white/10">ยังไม่เริ่ม</span>;
+  return <TierBadge set={p.isMaxed ? 6 : p.currentSet} name={name} size={size} />;
 }
 
 export function StatCard({ label, value, sub, accent = "text-indigo-300" }: { label: string; value: React.ReactNode; sub?: string; accent?: string }) {

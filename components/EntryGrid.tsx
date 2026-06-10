@@ -12,7 +12,7 @@ export default function EntryGrid({ setNo, stage, chapter, students, initial }: 
   initial: Record<string, number[] | null>;
 }) {
   const [rows, setRows] = useState(() =>
-    students.map((s) => ({ ...s, items: normalize(initial[s.id]) }))
+    students.map((s) => ({ ...s, items: normalize(initial[s.id]), existed: initial[s.id] != null }))
   );
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -26,7 +26,7 @@ export default function EntryGrid({ setNo, stage, chapter, students, initial }: 
   const save = () => {
     setMsg(null);
     start(async () => {
-      const res = await saveChapter({ setNo, stage, chapter, rows: rows.map((r) => ({ studentId: r.id, items: r.items })) });
+      const res = await saveChapter({ setNo, stage, chapter, rows: rows.map((r) => ({ studentId: r.id, items: r.items, existed: r.existed })) });
       if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
       else setMsg(res.error ?? "บันทึกไม่สำเร็จ");
     });

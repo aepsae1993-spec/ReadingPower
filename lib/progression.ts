@@ -23,7 +23,8 @@ export interface Progress {
   totalPassed: number;
   grandTotal: number;
   rankValue: number;
-  percent: number; // ความก้าวหน้ารวม %
+  percent: number; // ความก้าวหน้าในชุดปัจจุบัน %
+  started: boolean; // เคยมีคะแนน (>0) แล้วหรือยัง
 }
 
 const isPass = (r: ChapterResult) => r.total > 0 && r.score / r.total >= PASS_RATIO;
@@ -52,29 +53,30 @@ export function computeProgress(results: ChapterResult[]): Progress {
   let completedSets = 0;
   for (const sp of bySet) { if (sp.complete) completedSets++; else break; }
 
-  // ตำแหน่งปัจจุบัน = "จุดล่าสุดที่มีการบันทึกคะแนน" (ชุด > ด่าน > บท ที่สูงสุด)
-  const hasAny = results.length > 0;
+  // ตำแหน่งปัจจุบัน = "จุดล่าสุดที่มีคะแนนจริง (>0)" — 0/20 (คนที่ยังไม่ได้ทำ) ไม่นับ
+  const scored = results.filter((r) => r.score > 0);
+  const started = scored.length > 0;
   let cSet = 0, cStage = 0, cChap = 0;
-  for (const r of results) {
+  for (const r of scored) {
     if (r.setNo > cSet || (r.setNo === cSet && r.stage > cStage) || (r.setNo === cSet && r.stage === cStage && r.chapter > cChap)) {
       cSet = r.setNo; cStage = r.stage; cChap = r.chapter;
     }
   }
-  const currentSet = hasAny ? cSet : 1;
-  const currentStage = (hasAny ? cStage : 1) as StageId;
-  const currentChapter = hasAny ? cChap : 1;
+  const currentSet = started ? cSet : 1;
+  const currentStage = (started ? cStage : 1) as StageId;
+  const currentChapter = started ? cChap : 1;
 
   const isMaxed = completedSets >= MAX_SET;
   const totalPassed = bySet.reduce((a, x) => a + x.passedTotal, 0);
   const grandTotal = bySet.reduce((a, x) => a + x.total, 0);
   const passedInCurrentSet = bySet[currentSet - 1].passedTotal;
 
-  // จัดอันดับ: ชุดสูงกว่าเก่งกว่า > ผ่านมากกว่า > ด่าน/บท ไกลกว่า
-  const rankValue = currentSet * 1_000_000 + totalPassed * 1_000 + currentStage * 100 + currentChapter;
+  // จัดอันดับ: ชุดสูงกว่าเก่งกว่า > ผ่านมากกว่า > ด่าน/บท ไกลกว่า (คนยังไม่เริ่ม = อยู่ท้ายสุด)
+  const rankValue = started ? (currentSet * 1_000_000 + totalPassed * 1_000 + currentStage * 100 + currentChapter) : 0;
 
   return {
     bySet, completedSets, currentSet, currentStage, currentChapter, isMaxed,
-    totalPassed, grandTotal, rankValue,
-    percent: Math.round((passedInCurrentSet / bySet[currentSet - 1].total) * 100),
+    totalPassed, grandTotal, rankValue, started,
+    percent: started ? Math.round((passedInCurrentSet / bySet[currentSet - 1].total) * 100) : 0,
   };
 }

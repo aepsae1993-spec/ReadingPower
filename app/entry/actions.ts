@@ -4,14 +4,15 @@ import { revalidatePath } from "next/cache";
 
 export async function saveChapter(input: {
   setNo: number; stage: number; chapter: number;
-  rows: { studentId: string; items: number[] }[];
+  rows: { studentId: string; items: number[]; existed?: boolean }[];
 }) {
   const sb = createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, error: "ยังไม่ได้เข้าสู่ระบบ" };
 
   const now = new Date().toISOString();
-  const payload = input.rows.map((r) => ({
+  // บันทึกเฉพาะคนที่มีคะแนน (>0) หรือเคยมีบันทึกอยู่แล้ว (กันสร้างแถว 0 ของคนที่ยังไม่ได้ทำ)
+  const payload = input.rows.filter((r) => r.items.some((v) => v) || r.existed).map((r) => ({
     student_id: r.studentId,
     set_no: input.setNo,
     stage: input.stage,

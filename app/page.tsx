@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getAllStudents } from "@/lib/data.server";
 import { gradeName } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
-import { ProgressBar, PositionPill, RankMedal, RankEmblem, TierBadge } from "@/components/ui";
+import { ProgressBar, PositionPill, RankMedal, RankEmblem, LevelBadge } from "@/components/ui";
 import { Crown, Users, Flame, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function SchoolPage() {
   const rows = await getAllStudents();
   const top = rows.slice(0, 3);
-  const highestSet = Math.max(...rows.map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet)));
+  const startedSets = rows.filter((r) => r.progress.started).map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet));
+  const highestSet = startedSets.length ? Math.max(...startedSets) : 0;
   const avgPercent = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / rows.length);
 
   const byGrade = Array.from({ length: 6 }, (_, i) => i + 1).map((g) => {
@@ -39,7 +40,7 @@ export default async function SchoolPage() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <HeroStat icon={<Users size={16} />} label="นักเรียน" value={rows.length} />
-              <HeroStat icon={<Crown size={16} />} label="ชุดสูงสุด" value={highestSet} />
+              <HeroStat icon={<Crown size={16} />} label="ชุดสูงสุด" value={highestSet || "-"} />
               <HeroStat icon={<Flame size={16} />} label="ก้าวหน้าเฉลี่ย" value={`${avgPercent}%`} />
             </div>
           </div>
@@ -52,14 +53,13 @@ export default async function SchoolPage() {
         <div className="grid grid-cols-3 gap-3">
           {podiumOrder.map((r) => {
             const place = r.rank!;
-            const set = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
             return (
               <Link key={r.id} href={`/student/${r.id}`} className={`card group relative overflow-hidden p-5 text-center transition hover:-translate-y-1 ${place === 1 ? "sm:-mt-5 card-glow" : ""}`}>
                 {place === 1 && <span className="absolute right-[-34px] top-[18px] w-32 rotate-45 bg-gradient-to-r from-fuchsia-500 to-indigo-500 py-1 text-center text-[10px] font-extrabold tracking-widest text-white shadow">TOP</span>}
                 <RankEmblem rank={place} />
                 <div className="mt-1 truncate text-base font-bold text-ink">{r.name}</div>
                 <div className="text-xs text-slate-400">{gradeName(r.grade)}</div>
-                <div className="mt-2 flex justify-center"><TierBadge set={set} size="sm" /></div>
+                <div className="mt-2 flex justify-center"><LevelBadge p={r.progress} size="sm" /></div>
               </Link>
             );
           })}
@@ -78,7 +78,7 @@ export default async function SchoolPage() {
                 {best && <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-300"><Crown size={13} className="text-amber-500" /> {best.name.split(" ")[0]}</div>}
               </div>
               <div className="flex flex-col items-end gap-2">
-                {best && <TierBadge set={best.progress.isMaxed ? MAX_SET : best.progress.currentSet} name={false} size="sm" />}
+                {best && <LevelBadge p={best.progress} name={false} size="sm" />}
                 <ChevronRight className="text-slate-300 group-hover:text-indigo-500" />
               </div>
             </Link>
@@ -101,7 +101,7 @@ export default async function SchoolPage() {
                 <div className="text-xs text-slate-400">{gradeName(r.grade)}</div>
               </div>
               <div className="hidden sm:block"><PositionPill p={r.progress} /></div>
-              <TierBadge set={r.progress.isMaxed ? MAX_SET : r.progress.currentSet} name={false} size="sm" />
+              <LevelBadge p={r.progress} name={false} size="sm" />
               <div className="w-28 shrink-0">
                 <ProgressBar value={r.progress.totalPassed} max={r.progress.grandTotal} />
                 <div className="mt-0.5 text-right text-[10px] text-slate-400">{r.progress.percent}%</div>

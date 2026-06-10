@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET, STAGES } from "@/lib/types";
-import { ProgressBar, SetTrack, StatCard, TierBadge, STAGE_ICON } from "@/components/ui";
+import { ProgressBar, SetTrack, StatCard, LevelBadge, STAGE_ICON } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
           <div className="flex-1">
             <h1 className="text-2xl font-extrabold drop-shadow-sm">{s.name}</h1>
             <div className="text-sm text-white/80">{gradeName(s.grade)} · อันดับโรงเรียน #{s.rank}</div>
-            <div className="mt-2"><TierBadge set={curSet} size="md" /></div>
+            <div className="mt-2"><LevelBadge p={p} size="md" /></div>
           </div>
           <div className="text-right">
             <div className="text-4xl font-extrabold">{p.percent}%</div>
@@ -39,7 +39,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="ผ่านแล้ว" value={p.totalPassed} sub={`จาก ${p.grandTotal} บท`} accent="text-emerald-300" />
         <StatCard label="ชุดที่จบ" value={`${p.completedSets}/${MAX_SET}`} accent="text-indigo-300" />
-        <StatCard label="กำลังเล่น" value={p.isMaxed ? "จบแล้ว" : `ด่าน ${p.currentStage}`} sub={p.isMaxed ? "เก่งสุด ๆ" : `บท ${p.currentChapter}`} accent="text-fuchsia-300" />
+        <StatCard label="กำลังเล่น" value={p.isMaxed ? "จบแล้ว" : p.started ? `ด่าน ${p.currentStage}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `บท ${p.currentChapter}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
       </div>
 
       {/* Current set stages */}
