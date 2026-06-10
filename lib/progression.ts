@@ -1,4 +1,4 @@
-import { ChapterResult, MAX_SET, PASS_RATIO, STAGES, StageId, stageChapters } from "./types";
+import { ChapterResult, MAX_SET, PASS_RATIO, STAGES, StageId } from "./types";
 
 export interface StageProgress {
   stage: StageId;
@@ -29,7 +29,6 @@ export interface Progress {
 const isPass = (r: ChapterResult) => r.total > 0 && r.score / r.total >= PASS_RATIO;
 
 export function computeProgress(results: ChapterResult[]): Progress {
-  // passed[set][stage] = Set of chapters passed
   const passed = new Map<string, Set<number>>();
   for (const r of results) {
     if (!isPass(r)) continue;
@@ -53,29 +52,29 @@ export function computeProgress(results: ChapterResult[]): Progress {
   let completedSets = 0;
   for (const sp of bySet) { if (sp.complete) completedSets++; else break; }
 
-  const isMaxed = completedSets >= MAX_SET;
-  const currentSet = isMaxed ? MAX_SET : completedSets + 1;
-  const cs = bySet[currentSet - 1];
-  let currentStage: StageId = 1;
-  for (const st of cs.stages) { if (!st.complete) { currentStage = st.stage; break; } currentStage = 3; }
-  const currentChapter = Math.min(
-    cs.stages[currentStage - 1].passed + 1,
-    stageChapters(currentStage)
-  );
+  // ตำแหน่งปัจจุบัน = "จุดล่าสุดที่มีการบันทึกคะแนน" (ชุด > ด่าน > บท ที่สูงสุด)
+  const hasAny = results.length > 0;
+  let cSet = 0, cStage = 0, cChap = 0;
+  for (const r of results) {
+    if (r.setNo > cSet || (r.setNo === cSet && r.stage > cStage) || (r.setNo === cSet && r.stage === cStage && r.chapter > cChap)) {
+      cSet = r.setNo; cStage = r.stage; cChap = r.chapter;
+    }
+  }
+  const currentSet = hasAny ? cSet : 1;
+  const currentStage = (hasAny ? cStage : 1) as StageId;
+  const currentChapter = hasAny ? cChap : 1;
 
+  const isMaxed = completedSets >= MAX_SET;
   const totalPassed = bySet.reduce((a, x) => a + x.passedTotal, 0);
   const grandTotal = bySet.reduce((a, x) => a + x.total, 0);
+  const passedInCurrentSet = bySet[currentSet - 1].passedTotal;
 
-  // monotonic rank: เน้นชุดสูง > ด่าน > บท > จำนวนผ่านรวม
-  const rankValue =
-    completedSets * 1_000_000 +
-    (currentStage - 1) * 100_000 +
-    cs.stages[currentStage - 1].passed * 1_000 +
-    totalPassed;
+  // จัดอันดับ: ชุดสูงกว่าเก่งกว่า > ผ่านมากกว่า > ด่าน/บท ไกลกว่า
+  const rankValue = currentSet * 1_000_000 + totalPassed * 1_000 + currentStage * 100 + currentChapter;
 
   return {
     bySet, completedSets, currentSet, currentStage, currentChapter, isMaxed,
     totalPassed, grandTotal, rankValue,
-    percent: Math.round((totalPassed / grandTotal) * 100),
+    percent: Math.round((passedInCurrentSet / bySet[currentSet - 1].total) * 100),
   };
 }
