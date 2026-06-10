@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { getAllStudents } from "@/lib/data";
+import { getAllStudents } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
 import { ProgressBar, PositionPill, RankMedal, TierBadge } from "@/components/ui";
 import { Crown, Users, Flame, ChevronRight } from "lucide-react";
 
-export default function SchoolPage() {
-  const rows = getAllStudents();
+export const dynamic = "force-dynamic";
+
+export default async function SchoolPage() {
+  const rows = await getAllStudents();
   const top = rows.slice(0, 3);
   const highestSet = Math.max(...rows.map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet)));
   const avgPercent = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / rows.length);

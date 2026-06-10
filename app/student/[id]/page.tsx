@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllStudents, getStudent } from "@/lib/data";
+import { getStudent } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET, STAGES } from "@/lib/types";
 import { ProgressBar, SetTrack, StatCard, TierBadge, STAGE_ICON } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 
-export function generateStaticParams() {
-  return getAllStudents().map((s) => ({ id: s.id }));
-}
+export const dynamic = "force-dynamic";
 
-export default function StudentPage({ params }: { params: { id: string } }) {
-  const s = getStudent(params.id);
+export default async function StudentPage({ params }: { params: { id: string } }) {
+  const s = await getStudent(params.id);
   if (!s) notFound();
   const p = s.progress;
   const curSet = p.isMaxed ? MAX_SET : p.currentSet;

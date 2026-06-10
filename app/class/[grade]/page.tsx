@@ -1,21 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllStudents } from "@/lib/data";
+import { getClassStudents } from "@/lib/data.server";
 import { gradeName } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
 import { ProgressBar, PositionPill, RankMedal, StatCard, TierBadge } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 
-export function generateStaticParams() {
-  return [1, 2, 3, 4, 5, 6].map((g) => ({ grade: String(g) }));
-}
+export const dynamic = "force-dynamic";
 
-export default function ClassPage({ params }: { params: { grade: string } }) {
+export default async function ClassPage({ params }: { params: { grade: string } }) {
   const grade = Number(params.grade);
   if (!(grade >= 1 && grade <= 6)) notFound();
-  const all = getAllStudents();
-  const rows = all.filter((r) => r.grade === grade).sort((a, b) => b.progress.rankValue - a.progress.rankValue);
-  rows.forEach((r, i) => (r.rank = i + 1));
+  const rows = await getClassStudents(grade);
   const avg = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / (rows.length || 1));
   const topSet = Math.max(...rows.map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet)));
 

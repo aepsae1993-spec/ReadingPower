@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import Link from "next/link";
 import { Trophy, School, Sparkles } from "lucide-react";
+import AuthNav from "@/components/AuthNav";
 import "./globals.css";
 
 const sarabun = Sarabun({ subsets: ["thai", "latin"], weight: ["300", "400", "600", "700", "800"], variable: "--font-sarabun" });
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/class/4" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
                 <School size={16} /> ห้องเรียน
               </Link>
+              <AuthNav />
             </nav>
           </div>
         </header>
