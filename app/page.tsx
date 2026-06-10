@@ -23,6 +23,13 @@ export default async function SchoolPage() {
     return a.progress.currentChapter > b.progress.currentChapter;
   };
 
+  // ตัดคำนำหน้า (ด.ช./ด.ญ./นาย...) เหลือชื่อจริง
+  const firstName = (full: string) => {
+    const parts = full.trim().split(/\s+/);
+    const titles = ["ด.ช.", "ด.ญ.", "เด็กชาย", "เด็กหญิง", "นาย", "นางสาว", "นาง"];
+    return (titles.includes(parts[0]) ? parts[1] : parts[0]) ?? full;
+  };
+
   const byGrade = Array.from({ length: 6 }, (_, i) => i + 1).map((g) => {
     const list = rows.filter((r) => r.grade === g);
     const best = list.reduce<(typeof rows)[number] | undefined>((b, r) => (!b || isAhead(r, b) ? r : b), undefined);
@@ -85,7 +92,7 @@ export default async function SchoolPage() {
               <div>
                 <div className="text-xl font-extrabold text-ink">{gradeName(g)}</div>
                 <div className="text-xs text-slate-400">{count} คน · ก้าวหน้าเฉลี่ย {avg}%</div>
-                {best && <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-300"><Crown size={13} className="text-amber-500" /> {best.name.split(" ")[0]}</div>}
+                {best && <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-300"><Crown size={13} className="text-amber-500" /> {firstName(best.name)}</div>}
               </div>
               <div className="flex flex-col items-end gap-2">
                 {best && <LevelBadge p={best.progress} name={false} size="sm" />}
