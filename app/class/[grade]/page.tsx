@@ -17,7 +17,17 @@ export default async function ClassPage({ params }: { params: { grade: string } 
 
   return (
     <div className="space-y-6">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-indigo-300"><ArrowLeft size={16} /> โรงเรียน</Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-indigo-300"><ArrowLeft size={16} /> โรงเรียน</Link>
+        <div className="flex flex-wrap gap-1.5">
+          {[1, 2, 3, 4, 5, 6].map((g) => (
+            <Link key={g} href={`/class/${g}`}
+              className={`rounded-lg px-3 py-1.5 text-sm font-bold transition ${g === grade ? "bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white shadow-glow" : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"}`}>
+              ป.{g}
+            </Link>
+          ))}
+        </div>
+      </div>
 
       <section className="card overflow-hidden">
         <div className="relative bg-gradient-to-br from-sky-600 to-indigo-600 px-6 py-6 text-white">
