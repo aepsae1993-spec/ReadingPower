@@ -68,6 +68,19 @@ export async function chapterWorkbookBuffer(opts: { grade: number; setNo: number
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
 
+/** ทั้งชุด (รายห้อง): หลายชีต — Pre-Test, บทที่มีคะแนน, Post-Test */
+export async function setWorkbookBuffer(opts: { grade: number; setNo: number; perChapter: { chapter: number; students: ChapterStudent[] }[] }): Promise<ArrayBuffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "READING POWER";
+  for (const pc of opts.perChapter) {
+    const args = { grade: opts.grade, setNo: opts.setNo, chapter: pc.chapter, students: pc.students };
+    if (slotKind(pc.chapter) === "sentence") buildTestSheet(wb, args);
+    else buildRegularSheet(wb, args);
+  }
+  if (wb.worksheets.length === 0) wb.addWorksheet("ว่าง").getCell(1, 1).value = "ยังไม่มีคะแนนในชุดนี้";
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
 function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }) {
   const N = REGULAR_ITEMS;
   const COLS = 2 + N + 2; // ที่ + ชื่อ + 20 ข้อ + รวม + ร้อยละ
