@@ -66,7 +66,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ไม่ผ่าน</span>
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่กรอก</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> บททดสอบ (เต็ม {TEST_FULL})</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> แต่งประโยค (เต็ม {TEST_FULL})</span>
             </div>
           </div>
           <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">

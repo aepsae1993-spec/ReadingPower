@@ -52,7 +52,7 @@ export default async function SchoolPage() {
             <div>
               <div className="text-sm font-semibold text-white/80">แดชบอร์ดประจำโรงเรียน</div>
               <h1 className="mt-1 text-3xl font-extrabold tracking-tight">เส้นทางนักอ่าน 🏆</h1>
-              <p className="mt-1 max-w-lg text-sm text-white/80">ยิ่งชุดสูงยิ่งเก่ง — แต่ละชุดมี 50 บท ทดสอบทุก 5 บท (10 บท/ชุด · เต็มบทละ 15)</p>
+              <p className="mt-1 max-w-lg text-sm text-white/80">ยิ่งชุดสูงยิ่งเก่ง — แต่ละชุดมี 50 บท · แต่งประโยคทุก 5 บท (10 บท/ชุด · เต็มบทละ 15)</p>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <HeroStat icon={<Users size={16} />} label="นักเรียน" value={rows.length} />

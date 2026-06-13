@@ -1,9 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { ALL_CHAPTERS, isTestChapter } from "@/lib/types";
+import { chapterSlots } from "@/lib/types";
 
 export default function EntrySelector({ grade, setNo, chapter }: { grade: number; setNo: number; chapter: number }) {
   const router = useRouter();
+  const slots = chapterSlots();
   const go = (p: Record<string, number>) => {
     const q = new URLSearchParams({ grade: String(grade), set: String(setNo), chapter: String(chapter), ...Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v)])) });
     router.push(`/entry?${q.toString()}`);
@@ -23,8 +24,8 @@ export default function EntrySelector({ grade, setNo, chapter }: { grade: number
         </select>
       </Field>
       <Field label="บท">
-        <select value={chapter} onChange={(e) => go({ chapter: +e.target.value })} className={sel}>
-          {ALL_CHAPTERS.map((c) => <option key={c} value={c}>บท {c}{isTestChapter(c) ? " · ทดสอบ" : ""}</option>)}
+        <select value={chapter} onChange={(e) => go({ chapter: +e.target.value })} className={`${sel} min-w-[10rem]`}>
+          {slots.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
         </select>
       </Field>
     </div>

@@ -2,7 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import {
   REGULAR_ITEMS, REGULAR_PASS_RATIO, TEST_FULL, TEST_PASS,
-  isTestChapter, itemLevel, chapterPassed, MAX_SET, ALL_CHAPTERS,
+  slotKind, itemLevel, chapterPassed, chapterName, chapterShort, chapterSlots, MAX_SET, CHAPTERS_PER_SET,
 } from "./types";
 
 const FONT = "TH Sarabun New";
@@ -59,11 +59,11 @@ function normalizeItems(a: number[] | null | undefined, n: number): number[] {
 
 export interface ChapterStudent { no?: number | null; name: string; items: number[] | null; score: number | null; total: number | null; }
 
-/** ตารางรวมทั้งห้อง ต่อ 1 บท (บทปกติ = ติ๊กถูก/ผิด 20 ข้อ + วิเคราะห์รายข้อ · บททดสอบ = คะแนนเต็ม 15) */
+/** ตารางรวมทั้งห้อง ต่อ 1 บท (กดถูก/ผิด 20 ข้อ + วิเคราะห์รายข้อ · บทแต่งประโยค = คะแนนเต็ม 15) */
 export async function chapterWorkbookBuffer(opts: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "READING POWER";
-  if (isTestChapter(opts.chapter)) buildTestSheet(wb, opts);
+  if (slotKind(opts.chapter) === "sentence") buildTestSheet(wb, opts);
   else buildRegularSheet(wb, opts);
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
@@ -71,7 +71,7 @@ export async function chapterWorkbookBuffer(opts: { grade: number; setNo: number
 function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }) {
   const N = REGULAR_ITEMS;
   const COLS = 2 + N + 2; // ที่ + ชื่อ + 20 ข้อ + รวม + ร้อยละ
-  const ws = wb.addWorksheet(`ชุด${setNo} บท${chapter}`, { views: [{ state: "frozen", xSplit: 2, ySplit: 4 }] });
+  const ws = wb.addWorksheet(`ชุด${setNo} ${chapterShort(chapter)}`.slice(0, 31), { views: [{ state: "frozen", xSplit: 2, ySplit: 4 }] });
   printSetup(ws, "landscape");
 
   ws.getColumn(1).width = 4;
@@ -83,7 +83,7 @@ function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, studen
   const top = titleBlock(ws, COLS, [
     { text: "แบบบันทึกคะแนนรายข้อ", big: true },
     { text: `ชั้นประถมศึกษาปีที่ ${grade} ปีการศึกษา ${thaiYear()}` },
-    { text: `ชุดที่ ${setNo} · บทที่ ${chapter}  (เต็ม ${N} ข้อ · ผ่านที่ ${Math.ceil(N * REGULAR_PASS_RATIO)}/${N})` },
+    { text: `ชุดที่ ${setNo} · ${chapterName(chapter)}  (เต็ม ${N} ข้อ · ผ่านที่ ${Math.ceil(N * REGULAR_PASS_RATIO)}/${N})` },
   ]);
 
   const HR = top + 1;
@@ -145,7 +145,7 @@ function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, studen
 
 function buildTestSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }) {
   const COLS = 5; // ที่ ชื่อ คะแนน ร้อยละ ผล
-  const ws = wb.addWorksheet(`ชุด${setNo} บท${chapter}`, { views: [{ state: "frozen", ySplit: 4 }] });
+  const ws = wb.addWorksheet(`ชุด${setNo} ${chapterShort(chapter)}`.slice(0, 31), { views: [{ state: "frozen", ySplit: 4 }] });
   printSetup(ws, "portrait");
   ws.getColumn(1).width = 5;
   ws.getColumn(2).width = 30;
@@ -154,9 +154,9 @@ function buildTestSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students 
   ws.getColumn(5).width = 10;
 
   const top = titleBlock(ws, COLS, [
-    { text: "แบบบันทึกคะแนนบททดสอบ", big: true },
+    { text: "แบบบันทึกคะแนนแต่งประโยค", big: true },
     { text: `ชั้นประถมศึกษาปีที่ ${grade} ปีการศึกษา ${thaiYear()}` },
-    { text: `ชุดที่ ${setNo} · บทที่ ${chapter} (บททดสอบ · เต็ม ${TEST_FULL} · ผ่านที่ ${TEST_PASS})` },
+    { text: `ชุดที่ ${setNo} · ${chapterName(chapter)} (เต็ม ${TEST_FULL} · ผ่านที่ ${TEST_PASS})` },
   ]);
   const HR = top + 1;
   ["ที่", "ชื่อ-สกุล", `คะแนน (เต็ม ${TEST_FULL})`, "ร้อยละ", "ผล"].forEach((h, idx) => {
@@ -213,8 +213,8 @@ export async function studentWorkbookBuffer(opts: { name: string; grade: number;
   const ws = wb.addWorksheet(stripTitle(name).slice(0, 28) || "รายบุคคล");
   printSetup(ws, "portrait");
   ws.getColumn(1).width = 7;
-  ws.getColumn(2).width = 7;
-  ws.getColumn(3).width = 12;
+  ws.getColumn(2).width = 16;
+  ws.getColumn(3).width = 10;
   ws.getColumn(4).width = 12;
   ws.getColumn(5).width = 9;
   ws.getColumn(6).width = 9;
@@ -233,7 +233,7 @@ export async function studentWorkbookBuffer(opts: { name: string; grade: number;
   ]);
 
   const HR = top + 1;
-  ["ชุด", "บท", "ชนิด", "คะแนน", "ร้อยละ", "ผล"].forEach((h, idx) => {
+  ["ชุด", "รายการ", "ชนิด", "คะแนน", "ร้อยละ", "ผล"].forEach((h, idx) => {
     const cell = ws.getCell(HR, idx + 1);
     cell.value = h;
     cell.alignment = { horizontal: "center", vertical: "middle" };
@@ -243,16 +243,19 @@ export async function studentWorkbookBuffer(opts: { name: string; grade: number;
   });
   ws.getRow(HR).height = 20;
 
+  const slotCodes = chapterSlots().map((s) => s.code);
+  const kindLabel = (code: number) => (slotKind(code) === "sentence" ? "ประโยค" : code > CHAPTERS_PER_SET ? "ทดสอบ" : "ปกติ");
+
   let r = HR + 1;
   for (let set = 1; set <= MAX_SET; set++) {
-    const inSet = ALL_CHAPTERS.map((c) => byKey.get(`${set}-${c}`)).filter(Boolean) as StudentRecord[];
+    const inSet = slotCodes.map((c) => byKey.get(`${set}-${c}`)).filter(Boolean) as StudentRecord[];
     if (inSet.length === 0) continue;
     for (const rec of inSet) {
-      const test = isTestChapter(rec.chapter);
+      const sentence = slotKind(rec.chapter) === "sentence";
       const pass = chapterPassed(rec.chapter, rec.score, rec.total);
       setCell(ws, r, 1, set, { center: true, border: true });
-      setCell(ws, r, 2, rec.chapter, { center: true, border: true });
-      setCell(ws, r, 3, test ? "ทดสอบ" : "ปกติ", { center: true, border: true, fill: test ? C.total : undefined });
+      setCell(ws, r, 2, chapterShort(rec.chapter), { center: true, border: true });
+      setCell(ws, r, 3, kindLabel(rec.chapter), { center: true, border: true, fill: sentence ? C.total : undefined });
       setCell(ws, r, 4, `${rec.score}/${rec.total}`, { center: true, bold: true, border: true });
       const pctCell = ws.getCell(r, 5);
       pctCell.value = rec.total ? rec.score / rec.total : 0;

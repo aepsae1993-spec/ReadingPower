@@ -72,7 +72,7 @@ export default function ScoreGrid({ setNo, chapter, students, initial }: {
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="text-sm text-slate-400">{rows.length} คน · บททดสอบ กรอกคะแนนเต็ม {TEST_FULL} · ผ่านที่ {TEST_PASS} · เว้นว่าง = ยังไม่กรอก</div>
+        <div className="text-sm text-slate-400">{rows.length} คน · แต่งประโยค กรอกคะแนนเต็ม {TEST_FULL} · ผ่านที่ {TEST_PASS} · เว้นว่าง = ยังไม่กรอก</div>
         <div className="flex items-center gap-3">
           {msg && <span className="text-sm text-rose-300">{msg}</span>}
           <button onClick={save} disabled={pending}

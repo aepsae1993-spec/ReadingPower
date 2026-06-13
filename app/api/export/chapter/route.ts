@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient, isConfigured } from "@/lib/supabase/server";
 import { chapterWorkbookBuffer, ChapterStudent } from "@/lib/excel";
-import { CHAPTERS_PER_SET, isTestChapter } from "@/lib/types";
+import { isValidChapterCode, slotKind, chapterShort } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const grade = clamp(+(sp.get("grade") ?? 1), 1, 6);
   const setNo = clamp(+(sp.get("set") ?? 1), 1, 6);
-  const chapter = clamp(+(sp.get("chapter") ?? 1), 1, CHAPTERS_PER_SET);
+  const codeRaw = +(sp.get("chapter") ?? 1);
+  const chapter = isValidChapterCode(codeRaw) ? codeRaw : 1;
 
   const [{ data: students }, { data: scores }] = await Promise.all([
     sb.from("students").select("id,name,no").eq("active", true).eq("grade", grade).order("no", { nullsFirst: false }),
@@ -32,8 +33,8 @@ export async function GET(req: NextRequest) {
   });
 
   const buf = await chapterWorkbookBuffer({ grade, setNo, chapter, students: rows });
-  const kind = isTestChapter(chapter) ? "ทดสอบ" : "รายข้อ";
-  const filename = `คะแนน-ป${grade}-ชุด${setNo}-บท${chapter}-${kind}.xlsx`;
+  const kind = slotKind(chapter) === "sentence" ? "ประโยค" : "รายข้อ";
+  const filename = `คะแนน-ป${grade}-ชุด${setNo}-${chapterShort(chapter)}-${kind}.xlsx`;
   return xlsx(buf, filename);
 }
 
