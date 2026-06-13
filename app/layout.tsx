@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import Link from "next/link";
 import Image from "next/image";
-import { Trophy, School } from "lucide-react";
+import { Trophy, School, Activity } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
 import "./globals.css";
 
@@ -32,10 +32,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="flex items-center gap-1 text-sm font-semibold">
               <Link href="/" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
-                <Trophy size={16} /> โรงเรียน
+                <Trophy size={16} /> <span className="hidden sm:inline">โรงเรียน</span>
+              </Link>
+              <Link href="/summary" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
+                <Activity size={16} /> <span className="hidden sm:inline">สรุป</span>
               </Link>
               <Link href="/class/1" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
-                <School size={16} /> ห้องเรียน
+                <School size={16} /> <span className="hidden sm:inline">ห้องเรียน</span>
               </Link>
               <AuthNav />
             </nav>
