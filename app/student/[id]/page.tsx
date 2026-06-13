@@ -5,7 +5,7 @@ import { isConfigured } from "@/lib/supabase/server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET, TEST_FULL } from "@/lib/types";
 import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Compass } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +52,18 @@ export default async function StudentPage({ params, searchParams }: { params: { 
             <div className="text-sm text-white/80">ความก้าวหน้า ชุด {selectedSet}</div>
           </div>
         </div>
+      </section>
+
+      {/* ชุดเริ่มต้นที่แนะนำจาก Pre-Test */}
+      <section className="card flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30"><Compass size={20} /></span>
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">ชุดเริ่มต้นที่แนะนำ · จาก Pre-Test</div>
+            <div className="text-lg font-extrabold text-ink">{s.recommendedSet ? `ชุด ${s.recommendedSet}` : "ยังประเมินไม่ได้"}</div>
+          </div>
+        </div>
+        <div className="max-w-md text-sm text-slate-300">{s.placementNote}</div>
       </section>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
