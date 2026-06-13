@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import Link from "next/link";
-import { Trophy, School, BookOpenText } from "lucide-react";
+import Image from "next/image";
+import { Trophy, School } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
 import "./globals.css";
+
+const LOGO_URL = "https://bwnjcxewplhtpvvnclfc.supabase.co/storage/v1/object/public/logo/school-logo.png";
 
 const sarabun = Sarabun({ subsets: ["thai", "latin"], weight: ["300", "400", "600", "700", "800"], variable: "--font-sarabun" });
 
@@ -19,8 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/60 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-glow ring-1 ring-white/20">
-                <BookOpenText size={20} className="drop-shadow" />
+              <span className="relative grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-white/10 shadow-glow ring-1 ring-white/20">
+                <Image src={LOGO_URL} alt="โลโก้โรงเรียน" width={44} height={44} className="h-full w-full object-contain p-0.5" priority />
               </span>
               <div className="leading-tight">
                 <div className="text-base font-extrabold tracking-wide text-ink">READING POWER</div>
