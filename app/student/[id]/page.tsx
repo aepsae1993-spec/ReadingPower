@@ -9,13 +9,17 @@ import { ArrowLeft, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudentPage({ params }: { params: { id: string } }) {
+const clampSet = (n: number) => (Number.isFinite(n) ? Math.min(Math.max(Math.trunc(n), 1), MAX_SET) : 1);
+
+export default async function StudentPage({ params, searchParams }: { params: { id: string }; searchParams: { set?: string } }) {
   const s = await getStudent(params.id);
   if (!s) notFound();
   const p = s.progress;
-  const curSet = p.isMaxed ? MAX_SET : p.currentSet;
-  const t = tier(curSet);
-  const cur = p.bySet[curSet - 1];
+  const levelSet = p.isMaxed ? MAX_SET : p.currentSet;          // ระดับจริงของนักเรียน (สีการ์ด/ป้าย)
+  const t = tier(levelSet);
+  const selectedSet = clampSet(+(searchParams?.set ?? (p.started ? levelSet : 1)));  // ชุดที่กำลังดู
+  const cur = p.bySet[selectedSet - 1];
+  const setPercent = cur.total ? Math.round((cur.passed / cur.total) * 100) : 0; // ความก้าวหน้าในชุดที่ดู
 
   // คะแนนรวมจากบทที่กรอกแล้วทั้งหมด (เต็ม 20/15 รวมกัน) → ร้อยละ
   const done = p.bySet.flatMap((sp) => sp.cells).filter((c) => c.score != null);
@@ -44,8 +48,8 @@ export default async function StudentPage({ params }: { params: { id: string } }
             <div className="mt-2"><LevelBadge p={p} size="md" /></div>
           </div>
           <div className="text-right">
-            <div className="text-4xl font-extrabold">{p.percent}%</div>
-            <div className="text-sm text-white/80">ความก้าวหน้ารวม</div>
+            <div className="text-4xl font-extrabold">{setPercent}%</div>
+            <div className="text-sm text-white/80">ความก้าวหน้า ชุด {selectedSet}</div>
           </div>
         </div>
       </section>
@@ -54,22 +58,30 @@ export default async function StudentPage({ params }: { params: { id: string } }
         <StatCard label="คะแนนรวม" value={`${scorePct}%`} sub={done.length ? `ทำแล้ว ${done.length} บท · ${scoreSum}/${scoreMax} คะแนน` : "ยังไม่มีคะแนน"} accent="text-amber-300" />
         <StatCard label="บทที่ผ่าน" value={p.totalPassed} sub={`จาก ${p.grandTotal} บท`} accent="text-emerald-300" />
         <StatCard label="ชุดที่จบ" value={`${p.completedSets}/${MAX_SET}`} accent="text-indigo-300" />
-        <StatCard label="กำลังอยู่" value={p.isMaxed ? "จบแล้ว" : p.started ? `บท ${p.currentChapter}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `ชุด ${curSet}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
+        <StatCard label="กำลังอยู่" value={p.isMaxed ? "จบแล้ว" : p.started ? `บท ${p.currentChapter}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `ชุด ${levelSet}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
       </div>
 
-      {/* Current set — all 50 chapters */}
-      {!p.isMaxed && (
-        <section className="card p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-extrabold text-ink">ชุด {curSet} — 50 บท</h2>
-            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ไม่ผ่าน</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่กรอก</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> แต่งประโยค (เต็ม {TEST_FULL})</span>
-            </div>
+      {/* Selected set — all 50 chapters */}
+      <section className="card p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-xl font-extrabold text-ink">ชุด {selectedSet} — 50 บท</h2>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ไม่ผ่าน</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่กรอก</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> แต่งประโยค (เต็ม {TEST_FULL})</span>
           </div>
-          <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+        </div>
+        {/* แท็บเลือกชุด — คลิกย้อนดูชุดอื่นได้ */}
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {Array.from({ length: MAX_SET }, (_, i) => i + 1).map((n) => (
+            <Link key={n} href={`/student/${s.id}?set=${n}`} scroll={false}
+              className={`rounded-lg px-3 py-1.5 text-sm font-bold transition ${n === selectedSet ? "bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white shadow-glow" : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"}`}>
+              ชุด {n}
+            </Link>
+          ))}
+        </div>
+        <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
             {cur.cells.map((c) => {
               const state = c.score == null ? "empty" : c.passed ? "pass" : "fail";
               return (
@@ -86,12 +98,11 @@ export default async function StudentPage({ params }: { params: { id: string } }
             })}
           </div>
         </section>
-      )}
 
-      {/* Journey across 6 sets */}
+      {/* Journey across 6 sets — คลิกเพื่อเลือกดูชุด */}
       <section className="card p-5">
-        <h2 className="mb-3 text-xl font-extrabold text-ink">เส้นทาง 6 ชุด</h2>
-        <SetTrack p={p} />
+        <h2 className="mb-3 text-xl font-extrabold text-ink">เส้นทาง 6 ชุด <span className="text-sm font-semibold text-slate-400">(คลิกเพื่อดูแต่ละชุด)</span></h2>
+        <SetTrack p={p} selected={selectedSet} hrefFor={(n) => `/student/${s.id}?set=${n}`} />
       </section>
     </div>
   );

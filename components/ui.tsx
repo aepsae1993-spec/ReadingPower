@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { tier } from "@/lib/design";
 import { Progress } from "@/lib/progression";
 import { Crown } from "lucide-react";
@@ -94,16 +95,18 @@ export function RankMedal({ rank }: { rank: number }) {
   );
 }
 
-/** เส้นทาง 6 ชุด — แต่ละชุดมี 50 บท (จุด = บททดสอบทุก 5 บท) */
-export function SetTrack({ p }: { p: Progress }) {
+/** เส้นทาง 6 ชุด — แต่ละชุดมี 50 บท (จุด = บททดสอบทุก 5 บท) · คลิกเลือกชุดได้ถ้าส่ง hrefFor */
+export function SetTrack({ p, hrefFor, selected }: { p: Progress; hrefFor?: (setNo: number) => string; selected?: number }) {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
       {p.bySet.map((sp) => {
         const t = tier(sp.setNo);
         const active = sp.setNo === p.currentSet && !p.isMaxed;
+        const isSel = selected === sp.setNo;
         const tests = sp.cells.filter((c) => c.isTest);
-        return (
-          <div key={sp.setNo} className={`rounded-xl border p-2.5 ${sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"}`}>
+        const cls = `block rounded-xl border p-2.5 ${isSel ? "border-indigo-400 ring-2 ring-indigo-400/60 bg-indigo-500/10" : sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"} ${hrefFor ? "cursor-pointer transition hover:-translate-y-0.5" : ""}`;
+        const inner = (
+          <>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold text-slate-100">{t.emoji} ชุด {sp.setNo}</span>
               {sp.complete ? <span className="text-[11px] font-bold text-emerald-400">ผ่าน ✓</span> : <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{sp.passed}/{sp.total}</span>}
@@ -115,8 +118,11 @@ export function SetTrack({ p }: { p: Progress }) {
                   className={`h-2.5 rounded-full ${c.score == null ? "bg-slate-700" : c.passed ? "bg-emerald-400" : "bg-rose-400/80"}`} />
               ))}
             </div>
-          </div>
+          </>
         );
+        return hrefFor
+          ? <Link key={sp.setNo} href={hrefFor(sp.setNo)} scroll={false} className={cls}>{inner}</Link>
+          : <div key={sp.setNo} className={cls}>{inner}</div>;
       })}
     </div>
   );
