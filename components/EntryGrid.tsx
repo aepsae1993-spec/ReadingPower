@@ -1,30 +1,32 @@
 "use client";
 import { useState, useTransition } from "react";
-import { saveSet } from "@/app/entry/actions";
-import { SCORED_CHAPTERS, FULL_SCORE, PASS_SCORE, TESTS_PER_SET } from "@/lib/types";
+import { saveChecklist } from "@/app/entry/actions";
+import { REGULAR_ITEMS, REGULAR_PASS_RATIO } from "@/lib/types";
 import { Save, Check, Loader2 } from "lucide-react";
 
+const N = REGULAR_ITEMS; // 20 ข้อ
 type Stu = { id: string; name: string };
-type Cell = number | null;
 
-export default function EntryGrid({ setNo, students, initial }: {
-  setNo: number; students: Stu[];
-  initial: Record<string, Cell[]>;
+export default function EntryGrid({ setNo, chapter, students, initial }: {
+  setNo: number; chapter: number; students: Stu[];
+  initial: Record<string, number[] | null>;
 }) {
   const [rows, setRows] = useState(() =>
-    students.map((s) => ({ ...s, scores: normalize(initial[s.id]) }))
+    students.map((s) => ({ ...s, items: normalize(initial[s.id]), existed: initial[s.id] != null }))
   );
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const setScore = (si: number, ci: number, val: Cell) =>
-    setRows((rs) => rs.map((r, i) => (i === si ? { ...r, scores: r.scores.map((v, j) => (j === ci ? val : v)) } : r)));
+  const toggle = (si: number, ci: number) =>
+    setRows((rs) => rs.map((r, i) => i === si ? { ...r, items: r.items.map((v, j) => (j === ci ? (v ? 0 : 1) : v)) } : r));
+  const setAll = (si: number, val: number) =>
+    setRows((rs) => rs.map((r, i) => i === si ? { ...r, items: Array(N).fill(val) } : r));
 
   const save = () => {
     setMsg(null);
     start(async () => {
-      const res = await saveSet({ setNo, rows: rows.map((r) => ({ studentId: r.id, scores: r.scores })) });
+      const res = await saveChecklist({ setNo, chapter, rows: rows.map((r) => ({ studentId: r.id, items: r.items, existed: r.existed })) });
       if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
       else setMsg(res.error ?? "บันทึกไม่สำเร็จ");
     });
@@ -40,39 +42,35 @@ export default function EntryGrid({ setNo, students, initial }: {
           <thead>
             <tr className="text-slate-300">
               <th className="sticky left-0 top-0 z-30 border-b border-white/10 bg-slate-950 px-3 py-2.5 text-left font-bold">ชื่อ-สกุล</th>
-              {SCORED_CHAPTERS.map((ch) => (
-                <th key={ch} className="sticky top-0 z-20 w-16 border-b border-l border-white/10 bg-slate-950 px-0 py-2.5 text-center text-sm font-bold">บท {ch}</th>
+              {Array.from({ length: N }, (_, i) => (
+                <th key={i} className={`sticky top-0 z-20 w-9 border-b border-white/10 bg-slate-950 px-0 py-2.5 text-center text-xs font-bold ${i > 0 && i % 5 === 0 ? "border-l border-white/15" : ""}`}>{i + 1}</th>
               ))}
-              <th className="sticky right-0 top-0 z-30 border-b border-l border-white/10 bg-slate-950 px-2 py-2.5 text-center font-bold">ผ่าน</th>
+              <th className="sticky right-0 top-0 z-30 border-b border-l border-white/10 bg-slate-950 px-2 py-2.5 text-center font-bold">คะแนน</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, si) => {
-              const passed = r.scores.filter((v) => v != null && v >= PASS_SCORE).length;
-              const entered = r.scores.filter((v) => v != null).length;
+              const sc = r.items.reduce((a, b) => a + b, 0);
+              const pass = sc / N >= REGULAR_PASS_RATIO;
               return (
                 <tr key={r.id} className="group border-t border-white/5">
-                  <td className="sticky left-0 z-10 max-w-[200px] truncate bg-slate-950 px-3 py-1.5 font-medium text-slate-100 group-hover:bg-slate-900">
-                    <span className="text-xs tabular-nums text-slate-500">{si + 1}.</span> {r.name}
+                  <td className="sticky left-0 z-10 max-w-[190px] truncate bg-slate-950 px-3 py-1.5 font-medium text-slate-100 group-hover:bg-slate-900">
+                    <div className="flex items-center gap-1.5"><span className="text-xs tabular-nums text-slate-500">{si + 1}.</span> {r.name}</div>
+                    <div className="flex gap-2 pl-4 text-[11px]">
+                      <button onClick={() => setAll(si, 1)} className="text-emerald-400 hover:underline">ถูกหมด</button>
+                      <button onClick={() => setAll(si, 0)} className="text-rose-400 hover:underline">ล้าง</button>
+                    </div>
                   </td>
-                  {r.scores.map((v, ci) => {
-                    const state = v == null ? "empty" : v >= PASS_SCORE ? "pass" : "fail";
-                    return (
-                      <td key={ci} className="border-l border-white/10 p-1 text-center group-hover:bg-indigo-500/10">
-                        <input
-                          type="number" min={0} max={FULL_SCORE} inputMode="numeric" placeholder="–"
-                          value={v ?? ""}
-                          onChange={(e) => setScore(si, ci, parseCell(e.target.value))}
-                          className={`h-9 w-12 rounded-md bg-slate-800 text-center text-base font-bold tabular-nums outline-none ring-1 transition placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-400/50 ${
-                            state === "pass" ? "text-emerald-300 ring-emerald-500/30" : state === "fail" ? "text-rose-300 ring-rose-500/30" : "text-slate-400 ring-white/10"
-                          }`}
-                        />
-                      </td>
-                    );
-                  })}
-                  <td className="sticky right-0 z-10 border-l border-white/10 bg-slate-950 px-2 py-1.5 text-center font-extrabold text-slate-100 group-hover:bg-slate-900">
-                    <span className="tabular-nums">{passed}/{TESTS_PER_SET}</span>
-                    <div className="text-[11px] font-semibold text-slate-400">กรอก {entered}</div>
+                  {r.items.map((v, ci) => (
+                    <td key={ci} className={`p-0.5 text-center transition group-hover:bg-indigo-500/10 ${ci > 0 && ci % 5 === 0 ? "border-l border-white/10" : ""}`}>
+                      <button onClick={() => toggle(si, ci)}
+                        className={`h-6 w-6 rounded-md text-xs font-bold transition ${v ? "bg-emerald-500/90 text-white shadow-[0_0_8px_-2px_rgba(16,185,129,.9)]" : "bg-slate-800 text-slate-600 hover:bg-slate-600"}`}>
+                        {v ? "✓" : ""}
+                      </button>
+                    </td>
+                  ))}
+                  <td className={`sticky right-0 z-10 border-l border-white/10 bg-slate-950 px-2 py-1.5 text-center font-extrabold group-hover:bg-slate-900 ${pass ? "text-emerald-400" : "text-rose-400"}`}>
+                    {sc}/{N}<div className="text-[11px] font-semibold">{pass ? "ผ่าน" : "ไม่ผ่าน"}</div>
                   </td>
                 </tr>
               );
@@ -82,7 +80,7 @@ export default function EntryGrid({ setNo, students, initial }: {
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="text-sm text-slate-400">{rows.length} คน · กรอกคะแนนบททดสอบ (เต็ม {FULL_SCORE}) · ผ่านที่ {PASS_SCORE} · เว้นว่าง = ยังไม่กรอก</div>
+        <div className="text-sm text-slate-400">{rows.length} คน · กดช่องเพื่อให้คะแนนรายข้อ (✓ = ถูก) · ผ่านที่ 50%</div>
         <div className="flex items-center gap-3">
           {msg && <span className="text-sm text-rose-300">{msg}</span>}
           <button onClick={save} disabled={pending}
@@ -96,15 +94,8 @@ export default function EntryGrid({ setNo, students, initial }: {
   );
 }
 
-function parseCell(raw: string): Cell {
-  if (raw.trim() === "") return null;
-  let n = Math.round(Number(raw));
-  if (!Number.isFinite(n)) return null;
-  return Math.min(FULL_SCORE, Math.max(0, n));
-}
-
-function normalize(a: Cell[] | undefined): Cell[] {
-  const out: Cell[] = Array(TESTS_PER_SET).fill(null);
-  if (Array.isArray(a)) for (let i = 0; i < TESTS_PER_SET; i++) out[i] = a[i] ?? null;
+function normalize(a: number[] | null | undefined): number[] {
+  const out = Array(N).fill(0);
+  if (Array.isArray(a)) for (let i = 0; i < N; i++) out[i] = a[i] ? 1 : 0;
   return out;
 }

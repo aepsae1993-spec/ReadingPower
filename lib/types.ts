@@ -6,20 +6,33 @@ export interface Student {
   no?: number;   // เลขที่
 }
 
-/** คะแนนบททดสอบ 1 บท — มีเฉพาะบทที่ 5,10,...,50 ของแต่ละชุด (เต็ม 15) */
+/** คะแนนของบท 1 บท (บทปกติ เต็ม 20 · บททดสอบทุก 5 บท เต็ม 15) */
 export interface ChapterResult {
   studentId: string;
   setNo: number;   // ชุด 1..6
-  chapter: number; // บททดสอบ: 5,10,...,50
-  score: number;   // คะแนนที่ได้ 0..15
-  total: number;   // คะแนนเต็ม = 15
+  chapter: number; // บท 1..50
+  score: number;   // คะแนนที่ได้
+  total: number;   // คะแนนเต็มของบทนั้น (20 หรือ 15)
 }
 
 export const MAX_SET = 6;
 export const CHAPTERS_PER_SET = 50;     // แต่ละชุดมี 50 บท
-export const FULL_SCORE = 15;           // คะแนนเต็มต่อบททดสอบ
-export const PASS_SCORE = 8;            // ผ่านที่ 8/15 (≈ ครึ่งหนึ่ง)
 
-/** บททดสอบทุก 5 บท → 5,10,...,50 (10 บท/ชุด) */
-export const SCORED_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET / 5 }, (_, i) => (i + 1) * 5);
-export const TESTS_PER_SET = SCORED_CHAPTERS.length; // 10
+export const REGULAR_ITEMS = 20;        // บทปกติ: 20 ข้อ (กดถูก/ผิด)
+export const REGULAR_PASS_RATIO = 0.5;  // ผ่านที่ 50% (>=10/20)
+
+export const TEST_STEP = 5;             // บททดสอบทุก 5 บท
+export const TEST_FULL = 15;            // บททดสอบ: คะแนนเต็ม 15
+export const TEST_PASS = 8;             // ผ่านบททดสอบที่ 8/15
+
+/** บททดสอบ: 5,10,...,50 (10 บท/ชุด) */
+export const TEST_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET / TEST_STEP }, (_, i) => (i + 1) * TEST_STEP);
+/** ทุกบท: 1..50 */
+export const ALL_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET }, (_, i) => i + 1);
+
+export const isTestChapter = (c: number) => c % TEST_STEP === 0 && c >= 1 && c <= CHAPTERS_PER_SET;
+export const chapterFull = (c: number) => (isTestChapter(c) ? TEST_FULL : REGULAR_ITEMS);
+export function chapterPassed(chapter: number, score: number, total: number): boolean {
+  if (isTestChapter(chapter)) return score >= TEST_PASS;
+  return total > 0 && score / total >= REGULAR_PASS_RATIO;
+}

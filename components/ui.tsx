@@ -1,6 +1,5 @@
 import { tier } from "@/lib/design";
 import { Progress } from "@/lib/progression";
-import { SCORED_CHAPTERS, PASS_SCORE } from "@/lib/types";
 import { Crown } from "lucide-react";
 
 /** ช่อมะกอกประดับเหรียญ */
@@ -95,13 +94,14 @@ export function RankMedal({ rank }: { rank: number }) {
   );
 }
 
-/** เส้นทาง 6 ชุด — แต่ละชุดมี 10 บททดสอบ */
+/** เส้นทาง 6 ชุด — แต่ละชุดมี 50 บท (จุด = บททดสอบทุก 5 บท) */
 export function SetTrack({ p }: { p: Progress }) {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
       {p.bySet.map((sp) => {
         const t = tier(sp.setNo);
         const active = sp.setNo === p.currentSet && !p.isMaxed;
+        const tests = sp.cells.filter((c) => c.isTest);
         return (
           <div key={sp.setNo} className={`rounded-xl border p-2.5 ${sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"}`}>
             <div className="mb-2 flex items-center justify-between">
@@ -110,9 +110,9 @@ export function SetTrack({ p }: { p: Progress }) {
             </div>
             <ProgressBar value={sp.passed} max={sp.total} height="h-1.5" gradient={t.grad} />
             <div className="mt-2 grid grid-cols-5 gap-1">
-              {sp.scores.map((v, i) => (
-                <span key={i} title={`บท ${SCORED_CHAPTERS[i]}${v == null ? "" : ` · ${v}/15`}`}
-                  className={`h-2.5 rounded-full ${v == null ? "bg-slate-700" : v >= PASS_SCORE ? "bg-emerald-400" : "bg-rose-400/80"}`} />
+              {tests.map((c) => (
+                <span key={c.chapter} title={`บท ${c.chapter}${c.score == null ? "" : ` · ${c.score}/${c.total}`}`}
+                  className={`h-2.5 rounded-full ${c.score == null ? "bg-slate-700" : c.passed ? "bg-emerald-400" : "bg-rose-400/80"}`} />
               ))}
             </div>
           </div>

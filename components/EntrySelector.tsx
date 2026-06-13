@@ -1,10 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { ALL_CHAPTERS, isTestChapter } from "@/lib/types";
 
-export default function EntrySelector({ grade, setNo }: { grade: number; setNo: number }) {
+export default function EntrySelector({ grade, setNo, chapter }: { grade: number; setNo: number; chapter: number }) {
   const router = useRouter();
   const go = (p: Record<string, number>) => {
-    const q = new URLSearchParams({ grade: String(grade), set: String(setNo), ...Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v)])) });
+    const q = new URLSearchParams({ grade: String(grade), set: String(setNo), chapter: String(chapter), ...Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v)])) });
     router.push(`/entry?${q.toString()}`);
     router.refresh();
   };
@@ -19,6 +20,11 @@ export default function EntrySelector({ grade, setNo }: { grade: number; setNo: 
       <Field label="ชุด">
         <select value={setNo} onChange={(e) => go({ set: +e.target.value })} className={sel}>
           {[1, 2, 3, 4, 5, 6].map((s) => <option key={s} value={s}>ชุด {s}</option>)}
+        </select>
+      </Field>
+      <Field label="บท">
+        <select value={chapter} onChange={(e) => go({ chapter: +e.target.value })} className={sel}>
+          {ALL_CHAPTERS.map((c) => <option key={c} value={c}>บท {c}{isTestChapter(c) ? " · ทดสอบ" : ""}</option>)}
         </select>
       </Field>
     </div>

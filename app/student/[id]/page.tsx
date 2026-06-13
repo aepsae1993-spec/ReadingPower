@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
-import { MAX_SET, SCORED_CHAPTERS, FULL_SCORE, PASS_SCORE } from "@/lib/types";
+import { MAX_SET, TEST_FULL } from "@/lib/types";
 import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 
@@ -37,24 +37,33 @@ export default async function StudentPage({ params }: { params: { id: string } }
       </section>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="บทที่ผ่าน" value={p.totalPassed} sub={`จาก ${p.grandTotal} บททดสอบ`} accent="text-emerald-300" />
+        <StatCard label="บทที่ผ่าน" value={p.totalPassed} sub={`จาก ${p.grandTotal} บท`} accent="text-emerald-300" />
         <StatCard label="ชุดที่จบ" value={`${p.completedSets}/${MAX_SET}`} accent="text-indigo-300" />
         <StatCard label="กำลังอยู่" value={p.isMaxed ? "จบแล้ว" : p.started ? `บท ${p.currentChapter}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `ชุด ${curSet}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
       </div>
 
-      {/* Current set tests */}
+      {/* Current set — all 50 chapters */}
       {!p.isMaxed && (
         <section className="card p-5">
-          <h2 className="mb-3 text-xl font-extrabold text-ink">ชุด {curSet} — บททดสอบ <span className="text-base font-semibold text-slate-400">(เต็มบทละ {FULL_SCORE})</span></h2>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
-            {SCORED_CHAPTERS.map((ch, i) => {
-              const v = cur.scores[i];
-              const state = v == null ? "empty" : v >= PASS_SCORE ? "pass" : "fail";
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-xl font-extrabold text-ink">ชุด {curSet} — 50 บท</h2>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ไม่ผ่าน</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่กรอก</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> บททดสอบ (เต็ม {TEST_FULL})</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+            {cur.cells.map((c) => {
+              const state = c.score == null ? "empty" : c.passed ? "pass" : "fail";
               return (
-                <div key={ch} className={`rounded-xl border p-3 text-center ${state === "pass" ? "border-emerald-400/30 bg-emerald-500/10" : state === "fail" ? "border-rose-400/30 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
-                  <div className="text-sm font-semibold text-slate-300">บท {ch}</div>
-                  <div className={`mt-0.5 text-3xl font-extrabold tracking-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>{v == null ? "—" : v}</div>
-                  <div className="text-[11px] font-medium text-slate-400">{v == null ? "ยังไม่กรอก" : `/${FULL_SCORE} · ${state === "pass" ? "ผ่าน" : "ไม่ผ่าน"}`}</div>
+                <div key={c.chapter} title={`บท ${c.chapter}${c.score == null ? "" : ` · ${c.score}/${c.total}`}`}
+                  className={`rounded-lg border p-1.5 text-center ${c.isTest ? "ring-1 ring-amber-400/50" : ""} ${state === "pass" ? "border-emerald-400/30 bg-emerald-500/10" : state === "fail" ? "border-rose-400/30 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
+                  <div className="text-[11px] font-medium text-slate-400">บท {c.chapter}</div>
+                  <div className={`text-base font-extrabold leading-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>
+                    {c.score == null ? "–" : c.isTest ? c.score : c.passed ? "✓" : "✗"}
+                  </div>
                 </div>
               );
             })}
