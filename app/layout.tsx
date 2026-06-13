@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import Link from "next/link";
 import Image from "next/image";
+import NextTopLoader from "nextjs-toploader";
 import { Trophy, School, Activity } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
 import "./globals.css";
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className={sarabun.variable}>
       <body className="font-sans text-slate-200 antialiased">
+        <NextTopLoader color="#a78bfa" height={3} showSpinner={true} shadow="0 0 12px #a78bfa, 0 0 6px #d946ef" speed={300} crawlSpeed={160} />
         <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/60 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2.5">

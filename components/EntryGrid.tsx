@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { saveChecklist } from "@/app/entry/actions";
 import { REGULAR_ITEMS, REGULAR_PASS_RATIO, itemLevel } from "@/lib/types";
 import { Save, Check, Loader2 } from "lucide-react";
+import SuccessOverlay from "@/components/SuccessOverlay";
 
 const N = REGULAR_ITEMS; // 20 ข้อ
 type Stu = { id: string; name: string };
@@ -46,6 +47,7 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
 
   return (
     <div className="space-y-3">
+      <SuccessOverlay show={saved} />
       <div className="card overflow-auto max-h-[72vh]">
         <table className="w-full border-collapse text-sm">
           <thead>

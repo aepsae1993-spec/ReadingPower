@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { saveScore } from "@/app/entry/actions";
 import { TEST_FULL, TEST_PASS } from "@/lib/types";
 import { Save, Check, Loader2 } from "lucide-react";
+import SuccessOverlay from "@/components/SuccessOverlay";
 
 type Stu = { id: string; name: string };
 type Cell = number | null;
@@ -35,6 +36,7 @@ export default function ScoreGrid({ setNo, chapter, students, initial }: {
 
   return (
     <div className="space-y-3">
+      <SuccessOverlay show={saved} />
       <div className="card overflow-auto max-h-[72vh]">
         <table className="w-full border-collapse text-sm">
           <thead>
