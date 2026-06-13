@@ -20,16 +20,18 @@ create table if not exists public.students (
 );
 create index if not exists students_grade_idx on public.students(grade);
 
--- คะแนนรายบท: 1 แถว = (นักเรียน, ชุด, ด่าน, บท)
--- stage: 1=บัญชีคำพื้นฐาน(30บท) 2=อ่านถูกผิด(20บท) 3=แต่งประโยค(20บท)
+-- คะแนนรายบท: 1 แถว = (นักเรียน, ชุด, บท)
+-- chapter: 1..50 = บทในชุด (หาร 5 ลงตัว = แต่งประโยค เต็ม 15 · ที่เหลือ = กดถูก/ผิด เต็ม 20)
+--          101=Pre-Test อ่าน 102=Pre-Test ถูกผิด 103=Post-Test อ่าน 104=Post-Test ถูกผิด (กดถูก/ผิด เต็ม 20)
+-- stage: คงไว้เพื่อความเข้ากันได้ (ปัจจุบันเขียน 1 เสมอ)
 create table if not exists public.chapter_scores (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.students(id) on delete cascade,
   set_no smallint not null check (set_no between 1 and 6),
-  stage smallint not null check (stage between 1 and 3),
-  chapter smallint not null check (chapter between 1 and 30),
-  score smallint not null default 0,         -- ทำถูกกี่ข้อ
-  total smallint not null default 20,        -- ข้อทั้งหมด
+  stage smallint not null default 1 check (stage between 1 and 3),
+  chapter smallint not null check (chapter between 1 and 110),
+  score smallint not null default 0,         -- คะแนนที่ได้
+  total smallint not null default 20,        -- คะแนนเต็มของบทนั้น (20 หรือ 15)
   items jsonb,                               -- รายข้อ 0/1 เช่น [1,0,1,...] (ไว้วิเคราะห์ ง่าย/ดี/ยาก)
   updated_by uuid references auth.users(id),
   updated_at timestamptz default now(),
