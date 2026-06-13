@@ -22,6 +22,19 @@ const thin = { style: "thin" as const, color: { argb: C.border } };
 const ALL_BORDERS = { top: thin, left: thin, bottom: thin, right: thin };
 const fill = (argb: string) => ({ type: "pattern" as const, pattern: "solid" as const, fgColor: { argb } });
 
+/** ตั้งค่าพิมพ์ให้พอดี A4 (กว้าง 1 หน้าเสมอ) */
+function printSetup(ws: ExcelJS.Worksheet, orientation: "landscape" | "portrait") {
+  ws.pageSetup = {
+    paperSize: 9, // A4
+    orientation,
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0, // สูงกี่หน้าก็ได้
+    horizontalCentered: true,
+    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+  };
+}
+
 const thaiYear = () => new Date().getFullYear() + 543;
 const stripTitle = (name: string) => name.replace(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นางสาว|นาง)\s*/, "");
 
@@ -59,12 +72,13 @@ function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, studen
   const N = REGULAR_ITEMS;
   const COLS = 2 + N + 2; // ที่ + ชื่อ + 20 ข้อ + รวม + ร้อยละ
   const ws = wb.addWorksheet(`ชุด${setNo} บท${chapter}`, { views: [{ state: "frozen", xSplit: 2, ySplit: 4 }] });
+  printSetup(ws, "landscape");
 
-  ws.getColumn(1).width = 5;
-  ws.getColumn(2).width = 30;
-  for (let i = 0; i < N; i++) ws.getColumn(3 + i).width = 4.6;
-  ws.getColumn(3 + N).width = 11;
-  ws.getColumn(4 + N).width = 9;
+  ws.getColumn(1).width = 4;
+  ws.getColumn(2).width = 24;
+  for (let i = 0; i < N; i++) ws.getColumn(3 + i).width = 4;
+  ws.getColumn(3 + N).width = 9;
+  ws.getColumn(4 + N).width = 7;
 
   const top = titleBlock(ws, COLS, [
     { text: "แบบบันทึกคะแนนรายข้อ", big: true },
@@ -132,6 +146,7 @@ function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, studen
 function buildTestSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }) {
   const COLS = 5; // ที่ ชื่อ คะแนน ร้อยละ ผล
   const ws = wb.addWorksheet(`ชุด${setNo} บท${chapter}`, { views: [{ state: "frozen", ySplit: 4 }] });
+  printSetup(ws, "portrait");
   ws.getColumn(1).width = 5;
   ws.getColumn(2).width = 30;
   ws.getColumn(3).width = 14;
@@ -196,6 +211,7 @@ export async function studentWorkbookBuffer(opts: { name: string; grade: number;
   wb.creator = "READING POWER";
   const COLS = 6; // ชุด บท ชนิด คะแนน ร้อยละ ผล
   const ws = wb.addWorksheet(stripTitle(name).slice(0, 28) || "รายบุคคล");
+  printSetup(ws, "portrait");
   ws.getColumn(1).width = 7;
   ws.getColumn(2).width = 7;
   ws.getColumn(3).width = 12;
