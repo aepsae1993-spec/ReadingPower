@@ -16,6 +16,12 @@ export default async function StudentPage({ params }: { params: { id: string } }
   const t = tier(curSet);
   const cur = p.bySet[curSet - 1];
 
+  // คะแนนรวมจากบทที่กรอกแล้วทั้งหมด (เต็ม 20/15 รวมกัน) → ร้อยละ
+  const done = p.bySet.flatMap((sp) => sp.cells).filter((c) => c.score != null);
+  const scoreSum = done.reduce((a, c) => a + (c.score ?? 0), 0);
+  const scoreMax = done.reduce((a, c) => a + c.total, 0);
+  const scorePct = scoreMax ? Math.round((scoreSum / scoreMax) * 100) : 0;
+
   return (
     <div className="space-y-6">
       <Link href={`/class/${s.grade}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-indigo-300"><ArrowLeft size={16} /> ชั้น {gradeName(s.grade)}</Link>
@@ -36,7 +42,8 @@ export default async function StudentPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard label="คะแนนรวม" value={`${scorePct}%`} sub={done.length ? `ทำแล้ว ${done.length} บท · ${scoreSum}/${scoreMax} คะแนน` : "ยังไม่มีคะแนน"} accent="text-amber-300" />
         <StatCard label="บทที่ผ่าน" value={p.totalPassed} sub={`จาก ${p.grandTotal} บท`} accent="text-emerald-300" />
         <StatCard label="ชุดที่จบ" value={`${p.completedSets}/${MAX_SET}`} accent="text-indigo-300" />
         <StatCard label="กำลังอยู่" value={p.isMaxed ? "จบแล้ว" : p.started ? `บท ${p.currentChapter}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `ชุด ${curSet}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
@@ -61,8 +68,10 @@ export default async function StudentPage({ params }: { params: { id: string } }
                 <div key={c.chapter} title={`บท ${c.chapter}${c.score == null ? "" : ` · ${c.score}/${c.total}`}`}
                   className={`rounded-lg border p-1.5 text-center ${c.isTest ? "ring-1 ring-amber-400/50" : ""} ${state === "pass" ? "border-emerald-400/30 bg-emerald-500/10" : state === "fail" ? "border-rose-400/30 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
                   <div className="text-[11px] font-medium text-slate-400">บท {c.chapter}</div>
-                  <div className={`text-base font-extrabold leading-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>
-                    {c.score == null ? "–" : c.isTest ? c.score : c.passed ? "✓" : "✗"}
+                  <div className={`leading-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>
+                    {c.score == null
+                      ? <span className="text-base font-extrabold">–</span>
+                      : <><span className="text-base font-extrabold">{c.score}</span><span className="text-[10px] font-semibold text-slate-500">/{c.total}</span></>}
                   </div>
                 </div>
               );
