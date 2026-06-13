@@ -1,5 +1,3 @@
-export type StageId = 1 | 2 | 3;
-
 export interface Student {
   id: string;
   name: string;
@@ -8,32 +6,20 @@ export interface Student {
   no?: number;   // เลขที่
 }
 
-/** One graded chapter result (e.g. ชุด3 ด่าน1 บท12 = 18/20) */
+/** คะแนนบททดสอบ 1 บท — มีเฉพาะบทที่ 5,10,...,50 ของแต่ละชุด (เต็ม 15) */
 export interface ChapterResult {
   studentId: string;
-  setNo: number; // ชุด 1..6
-  stage: StageId; // 1 บัญชีคำ, 2 ถูกผิด, 3 แต่งประโยค
-  chapter: number; // บท
-  score: number; // ทำถูกกี่ข้อ
-  total: number; // ข้อทั้งหมด
+  setNo: number;   // ชุด 1..6
+  chapter: number; // บททดสอบ: 5,10,...,50
+  score: number;   // คะแนนที่ได้ 0..15
+  total: number;   // คะแนนเต็ม = 15
 }
 
-export const PASS_RATIO = 0.5; // ผ่านที่ 50%
 export const MAX_SET = 6;
+export const CHAPTERS_PER_SET = 50;     // แต่ละชุดมี 50 บท
+export const FULL_SCORE = 15;           // คะแนนเต็มต่อบททดสอบ
+export const PASS_SCORE = 8;            // ผ่านที่ 8/15 (≈ ครึ่งหนึ่ง)
 
-export interface StageMeta {
-  id: StageId;
-  name: string;
-  short: string;
-  chapters: number;
-}
-
-export const STAGES: StageMeta[] = [
-  { id: 1, name: "บัญชีคำพื้นฐาน", short: "บัญชีคำ", chapters: 30 },
-  { id: 2, name: "อ่านถูกผิด", short: "ถูกผิด", chapters: 20 },
-  { id: 3, name: "แต่งประโยค", short: "แต่งประโยค", chapters: 20 },
-];
-
-export function stageChapters(stage: StageId): number {
-  return STAGES[stage - 1].chapters;
-}
+/** บททดสอบทุก 5 บท → 5,10,...,50 (10 บท/ชุด) */
+export const SCORED_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET / 5 }, (_, i) => (i + 1) * 5);
+export const TESTS_PER_SET = SCORED_CHAPTERS.length; // 10

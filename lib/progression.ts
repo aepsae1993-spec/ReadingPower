@@ -1,82 +1,70 @@
-import { ChapterResult, MAX_SET, PASS_RATIO, STAGES, StageId } from "./types";
+import { ChapterResult, MAX_SET, SCORED_CHAPTERS, TESTS_PER_SET, PASS_SCORE, FULL_SCORE } from "./types";
 
-export interface StageProgress {
-  stage: StageId;
-  passed: number;
-  total: number;
-  complete: boolean;
-}
 export interface SetProgress {
   setNo: number;
-  stages: StageProgress[];
-  complete: boolean;
-  passedTotal: number;
-  total: number;
+  scores: (number | null)[]; // ตามลำดับ SCORED_CHAPTERS (null = ยังไม่กรอก)
+  passed: number;            // บทที่ผ่าน (score >= PASS_SCORE)
+  entered: number;           // บทที่กรอกคะแนนแล้ว
+  total: number;             // = TESTS_PER_SET (10)
+  complete: boolean;         // ผ่านครบทุกบท
 }
 export interface Progress {
   bySet: SetProgress[];
   completedSets: number;
   currentSet: number;
-  currentStage: StageId;
-  currentChapter: number; // บทถัดไปที่ต้องทำ (หรือบทสุดท้ายถ้าจบ)
+  currentChapter: number; // บททดสอบล่าสุดที่กรอก (5..50) หรือ 0 ถ้ายังไม่เริ่ม
   isMaxed: boolean;
   totalPassed: number;
-  grandTotal: number;
+  grandTotal: number;     // MAX_SET * TESTS_PER_SET
   rankValue: number;
-  percent: number; // ความก้าวหน้าในชุดปัจจุบัน %
-  started: boolean; // เคยมีคะแนน (>0) แล้วหรือยัง
+  percent: number;        // % บทที่ผ่านในชุดปัจจุบัน
+  started: boolean;        // เคยกรอกคะแนนแล้วหรือยัง
 }
 
-const isPass = (r: ChapterResult) => r.total > 0 && r.score / r.total >= PASS_RATIO;
-
 export function computeProgress(results: ChapterResult[]): Progress {
-  const passed = new Map<string, Set<number>>();
+  // map (set-chapter) -> score; รับเฉพาะรูปแบบใหม่ (เต็ม 15) ที่บททดสอบเท่านั้น
+  const scoreMap = new Map<string, number>();
   for (const r of results) {
-    if (!isPass(r)) continue;
-    const k = `${r.setNo}-${r.stage}`;
-    if (!passed.has(k)) passed.set(k, new Set());
-    passed.get(k)!.add(r.chapter);
+    if (r.total !== FULL_SCORE) continue;
+    if (!SCORED_CHAPTERS.includes(r.chapter)) continue;
+    scoreMap.set(`${r.setNo}-${r.chapter}`, r.score);
   }
-  const passedCount = (s: number, st: StageId) => passed.get(`${s}-${st}`)?.size ?? 0;
 
   const bySet: SetProgress[] = [];
   for (let s = 1; s <= MAX_SET; s++) {
-    const stages: StageProgress[] = STAGES.map((m) => {
-      const p = Math.min(passedCount(s, m.id), m.chapters);
-      return { stage: m.id, passed: p, total: m.chapters, complete: p >= m.chapters };
+    const scores = SCORED_CHAPTERS.map((c) => {
+      const v = scoreMap.get(`${s}-${c}`);
+      return v == null ? null : v;
     });
-    const passedTotal = stages.reduce((a, x) => a + x.passed, 0);
-    const total = stages.reduce((a, x) => a + x.total, 0);
-    bySet.push({ setNo: s, stages, complete: stages.every((x) => x.complete), passedTotal, total });
+    const entered = scores.filter((v) => v != null).length;
+    const passed = scores.filter((v) => v != null && v >= PASS_SCORE).length;
+    bySet.push({ setNo: s, scores, passed, entered, total: TESTS_PER_SET, complete: passed >= TESTS_PER_SET });
   }
 
   let completedSets = 0;
   for (const sp of bySet) { if (sp.complete) completedSets++; else break; }
 
-  // ตำแหน่งปัจจุบัน = "จุดล่าสุดที่มีคะแนนจริง (>0)" — 0/20 (คนที่ยังไม่ได้ทำ) ไม่นับ
-  const scored = results.filter((r) => r.score > 0);
-  const started = scored.length > 0;
-  let cSet = 0, cStage = 0, cChap = 0;
-  for (const r of scored) {
-    if (r.setNo > cSet || (r.setNo === cSet && r.stage > cStage) || (r.setNo === cSet && r.stage === cStage && r.chapter > cChap)) {
-      cSet = r.setNo; cStage = r.stage; cChap = r.chapter;
+  // ตำแหน่งปัจจุบัน = ชุด/บท สูงสุดที่มีการกรอกคะแนน
+  let started = false, cSet = 0, cChap = 0;
+  for (let s = 1; s <= MAX_SET; s++) {
+    for (const c of SCORED_CHAPTERS) {
+      if (scoreMap.has(`${s}-${c}`)) { started = true; cSet = s; cChap = c; }
     }
   }
   const currentSet = started ? cSet : 1;
-  const currentStage = (started ? cStage : 1) as StageId;
-  const currentChapter = started ? cChap : 1;
+  const currentChapter = started ? cChap : 0;
 
   const isMaxed = completedSets >= MAX_SET;
-  const totalPassed = bySet.reduce((a, x) => a + x.passedTotal, 0);
-  const grandTotal = bySet.reduce((a, x) => a + x.total, 0);
-  const passedInCurrentSet = bySet[currentSet - 1].passedTotal;
+  const totalPassed = bySet.reduce((a, x) => a + x.passed, 0);
+  const grandTotal = MAX_SET * TESTS_PER_SET;
+  const passedInCurrentSet = bySet[currentSet - 1].passed;
 
-  // จัดอันดับ: ชุดสูงกว่าเก่งกว่า > ผ่านมากกว่า > ด่าน/บท ไกลกว่า (คนยังไม่เริ่ม = อยู่ท้ายสุด)
-  const rankValue = started ? (currentSet * 1_000_000 + totalPassed * 1_000 + currentStage * 100 + currentChapter) : 0;
+  // จัดอันดับ: ชุดสูงกว่าเก่งกว่า > ผ่านมากกว่า > บทไกลกว่า (คนยังไม่เริ่ม = ท้ายสุด)
+  const rankValue = started ? (currentSet * 1_000_000 + totalPassed * 1_000 + currentChapter) : 0;
 
   return {
-    bySet, completedSets, currentSet, currentStage, currentChapter, isMaxed,
+    bySet, completedSets, currentSet, currentChapter, isMaxed,
     totalPassed, grandTotal, rankValue, started,
-    percent: started ? Math.round((passedInCurrentSet / bySet[currentSet - 1].total) * 100) : 0,
+    percent: started ? Math.round((passedInCurrentSet / TESTS_PER_SET) * 100) : 0,
   };
 }

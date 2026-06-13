@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
-import { MAX_SET, STAGES } from "@/lib/types";
-import { ProgressBar, SetTrack, StatCard, LevelBadge, STAGE_ICON } from "@/components/ui";
+import { MAX_SET, SCORED_CHAPTERS, FULL_SCORE, PASS_SCORE } from "@/lib/types";
+import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -37,27 +37,24 @@ export default async function StudentPage({ params }: { params: { id: string } }
       </section>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="ผ่านแล้ว" value={p.totalPassed} sub={`จาก ${p.grandTotal} บท`} accent="text-emerald-300" />
+        <StatCard label="บทที่ผ่าน" value={p.totalPassed} sub={`จาก ${p.grandTotal} บททดสอบ`} accent="text-emerald-300" />
         <StatCard label="ชุดที่จบ" value={`${p.completedSets}/${MAX_SET}`} accent="text-indigo-300" />
-        <StatCard label="กำลังเล่น" value={p.isMaxed ? "จบแล้ว" : p.started ? `ด่าน ${p.currentStage}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `บท ${p.currentChapter}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
+        <StatCard label="กำลังอยู่" value={p.isMaxed ? "จบแล้ว" : p.started ? `บท ${p.currentChapter}` : "ยังไม่เริ่ม"} sub={p.isMaxed ? "เก่งสุด ๆ" : p.started ? `ชุด ${curSet}` : "ยังไม่มีคะแนน"} accent="text-fuchsia-300" />
       </div>
 
-      {/* Current set stages */}
+      {/* Current set tests */}
       {!p.isMaxed && (
         <section className="card p-5">
-          <h2 className="mb-3 text-xl font-extrabold text-ink">ชุด {curSet} — 3 ด่าน</h2>
-          <div className="space-y-3">
-            {cur.stages.map((st) => {
-              const Icon = STAGE_ICON[st.stage - 1];
-              const meta = STAGES[st.stage - 1];
-              const active = st.stage === p.currentStage;
+          <h2 className="mb-3 text-xl font-extrabold text-ink">ชุด {curSet} — บททดสอบ <span className="text-base font-semibold text-slate-400">(เต็มบทละ {FULL_SCORE})</span></h2>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+            {SCORED_CHAPTERS.map((ch, i) => {
+              const v = cur.scores[i];
+              const state = v == null ? "empty" : v >= PASS_SCORE ? "pass" : "fail";
               return (
-                <div key={st.stage} className={`rounded-xl border p-3 ${st.complete ? "border-emerald-400/30 bg-emerald-500/10" : active ? "border-indigo-400/40 bg-indigo-500/10" : "border-white/10"}`}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-base font-bold text-ink"><Icon size={17} className="text-slate-300" /> ด่าน {st.stage}: {meta.name}</div>
-                    <span className="text-sm font-semibold text-slate-300">{st.passed}/{st.total} บท {st.complete ? "· ผ่าน ✓" : active ? "· กำลังเล่น" : ""}</span>
-                  </div>
-                  <ProgressBar value={st.passed} max={st.total} gradient={st.complete ? "from-emerald-400 to-emerald-600" : "from-indigo-500 to-fuchsia-500"} />
+                <div key={ch} className={`rounded-xl border p-3 text-center ${state === "pass" ? "border-emerald-400/30 bg-emerald-500/10" : state === "fail" ? "border-rose-400/30 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
+                  <div className="text-sm font-semibold text-slate-300">บท {ch}</div>
+                  <div className={`mt-0.5 text-3xl font-extrabold tracking-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>{v == null ? "—" : v}</div>
+                  <div className="text-[11px] font-medium text-slate-400">{v == null ? "ยังไม่กรอก" : `/${FULL_SCORE} · ${state === "pass" ? "ผ่าน" : "ไม่ผ่าน"}`}</div>
                 </div>
               );
             })}

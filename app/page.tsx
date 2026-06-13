@@ -14,13 +14,13 @@ export default async function SchoolPage() {
   const highestSet = startedSets.length ? Math.max(...startedSets) : 0;
   const avgPercent = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / rows.length);
 
-  // คนเก่งสุดของชั้น = ไปถึงชุดสูงสุด, ชุดเท่ากันดูด่าน, ด่านเท่ากันดูบท
+  // คนเก่งสุดของชั้น = ไปถึงชุดสูงสุด, ชุดเท่ากันดูบทไกลกว่า, บทเท่ากันดูจำนวนบทที่ผ่าน
   const setReached = (p: (typeof rows)[number]["progress"]) => (p.isMaxed ? MAX_SET : p.started ? p.currentSet : 0);
   const isAhead = (a: (typeof rows)[number], b: (typeof rows)[number]) => {
     const sa = setReached(a.progress), sb = setReached(b.progress);
     if (sa !== sb) return sa > sb;
-    if (a.progress.currentStage !== b.progress.currentStage) return a.progress.currentStage > b.progress.currentStage;
-    return a.progress.currentChapter > b.progress.currentChapter;
+    if (a.progress.currentChapter !== b.progress.currentChapter) return a.progress.currentChapter > b.progress.currentChapter;
+    return a.progress.totalPassed > b.progress.totalPassed;
   };
 
   // ตัดคำนำหน้า (ด.ช./ด.ญ./นาย...) เหลือชื่อจริง
@@ -52,7 +52,7 @@ export default async function SchoolPage() {
             <div>
               <div className="text-sm font-semibold text-white/80">แดชบอร์ดประจำโรงเรียน</div>
               <h1 className="mt-1 text-3xl font-extrabold tracking-tight">เส้นทางนักอ่าน 🏆</h1>
-              <p className="mt-1 max-w-lg text-sm text-white/80">ยิ่งชุดสูงยิ่งเก่ง — แต่ละชุดมี 3 ด่าน: บัญชีคำพื้นฐาน · อ่านถูกผิด · แต่งประโยค</p>
+              <p className="mt-1 max-w-lg text-sm text-white/80">ยิ่งชุดสูงยิ่งเก่ง — แต่ละชุดมี 50 บท ทดสอบทุก 5 บท (10 บท/ชุด · เต็มบทละ 15)</p>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <HeroStat icon={<Users size={16} />} label="นักเรียน" value={rows.length} />
@@ -76,7 +76,7 @@ export default async function SchoolPage() {
                 <div className="mt-1 truncate text-lg font-bold text-ink">{r.name}</div>
                 <div className="text-sm text-slate-300">{gradeName(r.grade)}</div>
                 <div className="mt-2 flex justify-center"><LevelBadge p={r.progress} size="md" /></div>
-                {r.progress.started && !r.progress.isMaxed && <div className="mt-1.5 text-xs text-slate-300">ด่าน {r.progress.currentStage} · บท {r.progress.currentChapter}</div>}
+                {r.progress.started && !r.progress.isMaxed && <div className="mt-1.5 text-xs text-slate-300">บท {r.progress.currentChapter}/50</div>}
               </Link>
             );
           })}

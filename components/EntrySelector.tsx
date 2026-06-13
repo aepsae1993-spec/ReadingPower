@@ -1,14 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { STAGES, stageChapters } from "@/lib/types";
 
-export default function EntrySelector({ grade, setNo, stage, chapter }: { grade: number; setNo: number; stage: number; chapter: number }) {
+export default function EntrySelector({ grade, setNo }: { grade: number; setNo: number }) {
   const router = useRouter();
   const go = (p: Record<string, number>) => {
-    const q = new URLSearchParams({ grade: String(grade), set: String(setNo), stage: String(stage), chapter: String(chapter), ...Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v)])) });
-    // reset chapter to 1 if stage changes and chapter out of range
-    const ns = p.stage ?? stage;
-    if (Number(q.get("chapter")) > stageChapters(ns as any)) q.set("chapter", "1");
+    const q = new URLSearchParams({ grade: String(grade), set: String(setNo), ...Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v)])) });
     router.push(`/entry?${q.toString()}`);
     router.refresh();
   };
@@ -25,16 +21,6 @@ export default function EntrySelector({ grade, setNo, stage, chapter }: { grade:
           {[1, 2, 3, 4, 5, 6].map((s) => <option key={s} value={s}>ชุด {s}</option>)}
         </select>
       </Field>
-      <Field label="ด่าน">
-        <select value={stage} onChange={(e) => go({ stage: +e.target.value })} className={sel}>
-          {STAGES.map((s) => <option key={s.id} value={s.id}>ด่าน {s.id} · {s.short}</option>)}
-        </select>
-      </Field>
-      <Field label="บท">
-        <select value={chapter} onChange={(e) => go({ chapter: +e.target.value })} className={sel}>
-          {Array.from({ length: stageChapters(stage as any) }, (_, i) => i + 1).map((c) => <option key={c} value={c}>บท {c}</option>)}
-        </select>
-      </Field>
     </div>
   );
 }
@@ -42,7 +28,7 @@ export default function EntrySelector({ grade, setNo, stage, chapter }: { grade:
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11px] font-semibold text-slate-400">{label}</span>
+      <span className="text-xs font-semibold text-slate-300">{label}</span>
       {children}
     </label>
   );

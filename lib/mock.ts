@@ -1,4 +1,4 @@
-import { ChapterResult, MAX_SET, STAGES, StageId, Student } from "./types";
+import { ChapterResult, MAX_SET, SCORED_CHAPTERS, TESTS_PER_SET, FULL_SCORE, Student } from "./types";
 
 // deterministic PRNG
 function rng(seed: number) { return () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; }
@@ -22,20 +22,17 @@ export function buildMock() {
   for (const s of students) {
     // higher grades tend to be further; plus randomness so a low grade can shine
     const reach = Math.min(MAX_SET, Math.max(1, Math.round((s.grade / 6) * 6 + (rand() - 0.4) * 3)));
-    const stopStage = (1 + Math.floor(rand() * 3)) as StageId;
-    const stopChapter = 1 + Math.floor(rand() * STAGES[stopStage - 1].chapters);
+    const stopTest = 1 + Math.floor(rand() * TESTS_PER_SET); // กรอกถึงบททดสอบที่เท่าไร (1..10) ในชุดสุดท้าย
     for (let set = 1; set <= reach; set++) {
       const lastSet = set === reach;
-      for (const st of STAGES) {
-        const upto = lastSet && st.id === stopStage ? stopChapter : lastSet && st.id > stopStage ? 0 : st.chapters;
-        for (let c = 1; c <= upto; c++) {
-          // chapters already cleared = pass solidly (16-20); only the current frontier varies (some fail)
-          const frontier = lastSet && st.id === stopStage && c >= stopChapter - 1;
-          const score = frontier
-            ? 8 + Math.floor(rand() * 6)        // 8-13 → ~ครึ่งผ่าน
-            : 16 + Math.floor(rand() * 5);      // 16-20 → ผ่านชัวร์
-          results.push({ studentId: s.id, setNo: set, stage: st.id, chapter: c, score, total: 20 });
-        }
+      const upto = lastSet ? stopTest : TESTS_PER_SET;
+      for (let i = 0; i < upto; i++) {
+        // บทที่ผ่านมาแล้ว = คะแนนดี (10-15); บทล่าสุด (frontier) = ผันผวน (5-13)
+        const frontier = lastSet && i >= upto - 2;
+        const score = frontier
+          ? 5 + Math.floor(rand() * 9)    // 5-13
+          : 10 + Math.floor(rand() * 6);  // 10-15
+        results.push({ studentId: s.id, setNo: set, chapter: SCORED_CHAPTERS[i], score, total: FULL_SCORE });
       }
     }
   }

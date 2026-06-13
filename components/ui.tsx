@@ -1,9 +1,7 @@
 import { tier } from "@/lib/design";
 import { Progress } from "@/lib/progression";
-import { STAGES } from "@/lib/types";
-import { BookOpen, CheckCheck, PenLine, Crown } from "lucide-react";
-
-export const STAGE_ICON = [BookOpen, CheckCheck, PenLine];
+import { SCORED_CHAPTERS, PASS_SCORE } from "@/lib/types";
+import { Crown } from "lucide-react";
 
 /** ช่อมะกอกประดับเหรียญ */
 function Laurel({ className = "" }: { className?: string }) {
@@ -63,10 +61,9 @@ export function ProgressBar({ value, max, gradient = "from-indigo-500 to-fuchsia
 export function PositionPill({ p }: { p: Progress }) {
   if (!p.started) return <span className="chip bg-white/5 px-2.5 py-1 text-slate-500 ring-1 ring-white/10">ยังไม่เริ่ม</span>;
   if (p.isMaxed) return <span className="chip bg-purple-500/20 px-2.5 py-1 text-purple-200 ring-1 ring-purple-400/30">🏆 จบครบทุกชุด</span>;
-  const s = STAGES[p.currentStage - 1];
   return (
     <span className="chip bg-white/10 px-2.5 py-1 text-slate-200 ring-1 ring-white/10">
-      ด่าน {p.currentStage} · {s.short} · บท {p.currentChapter}
+      บท {p.currentChapter}/50
     </span>
   );
 }
@@ -98,7 +95,7 @@ export function RankMedal({ rank }: { rank: number }) {
   );
 }
 
-/** เส้นทาง 6 ชุด × 3 ด่าน */
+/** เส้นทาง 6 ชุด — แต่ละชุดมี 10 บททดสอบ */
 export function SetTrack({ p }: { p: Progress }) {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
@@ -107,21 +104,16 @@ export function SetTrack({ p }: { p: Progress }) {
         const active = sp.setNo === p.currentSet && !p.isMaxed;
         return (
           <div key={sp.setNo} className={`rounded-xl border p-2.5 ${sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"}`}>
-            <div className="mb-1.5 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold text-slate-100">{t.emoji} ชุด {sp.setNo}</span>
-              {sp.complete && <span className="text-[11px] font-bold text-emerald-400">ผ่าน ✓</span>}
+              {sp.complete ? <span className="text-[11px] font-bold text-emerald-400">ผ่าน ✓</span> : <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{sp.passed}/{sp.total}</span>}
             </div>
-            <div className="space-y-1.5">
-              {sp.stages.map((st) => {
-                const Icon = STAGE_ICON[st.stage - 1];
-                return (
-                  <div key={st.stage} className="flex items-center gap-1.5">
-                    <Icon size={13} className="shrink-0 text-slate-400" />
-                    <ProgressBar value={st.passed} max={st.total} height="h-1.5" gradient={t.grad} />
-                    <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-slate-400">{st.passed}/{st.total}</span>
-                  </div>
-                );
-              })}
+            <ProgressBar value={sp.passed} max={sp.total} height="h-1.5" gradient={t.grad} />
+            <div className="mt-2 grid grid-cols-5 gap-1">
+              {sp.scores.map((v, i) => (
+                <span key={i} title={`บท ${SCORED_CHAPTERS[i]}${v == null ? "" : ` · ${v}/15`}`}
+                  className={`h-2.5 rounded-full ${v == null ? "bg-slate-700" : v >= PASS_SCORE ? "bg-emerald-400" : "bg-rose-400/80"}`} />
+              ))}
             </div>
           </div>
         );

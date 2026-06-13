@@ -13,11 +13,11 @@ async function fetchAll(): Promise<{ students: Student[]; results: ChapterResult
   const sb = createClient();
   const [{ data: st }, { data: sc }] = await Promise.all([
     sb.from("students").select("id,name,grade,room,no").eq("active", true).order("grade").order("no", { nullsFirst: false }),
-    sb.from("chapter_scores").select("student_id,set_no,stage,chapter,score,total"),
+    sb.from("chapter_scores").select("student_id,set_no,chapter,score,total"),
   ]);
   const students: Student[] = (st ?? []).map((s: any) => ({ id: s.id, name: s.name, grade: s.grade, room: s.room ?? undefined, no: s.no ?? undefined }));
   const results: ChapterResult[] = (sc ?? []).map((r: any) => ({
-    studentId: r.student_id, setNo: r.set_no, stage: r.stage, chapter: r.chapter, score: r.score, total: r.total,
+    studentId: r.student_id, setNo: r.set_no, chapter: r.chapter, score: r.score, total: r.total,
   }));
   return { students, results };
 }
