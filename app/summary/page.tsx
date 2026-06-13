@@ -40,6 +40,15 @@ export default async function SummaryPage() {
     };
   });
 
+  // เทียบกับเกณฑ์ชั้น: ป.X ควรอยู่ชุด X — สูงกว่า = เก่งกว่าเกณฑ์, ต่ำกว่า = อ่อนกว่าเกณฑ์
+  const withLevel = rows
+    .filter((r) => r.progress.started)
+    .map((r) => ({ r, lvl: r.progress.isMaxed ? MAX_SET : r.progress.currentSet }))
+    .map((x) => ({ ...x, diff: x.lvl - x.r.grade }));
+  const ahead = withLevel.filter((x) => x.diff > 0).sort((a, b) => b.diff - a.diff || a.r.grade - b.r.grade);
+  const behind = withLevel.filter((x) => x.diff < 0).sort((a, b) => a.diff - b.diff || a.r.grade - b.r.grade);
+  const onTrack = withLevel.filter((x) => x.diff === 0).length;
+
   // กิจกรรมล่าสุด (เฉพาะเมื่อเชื่อม DB)
   let recent: any[] = [];
   if (isConfigured()) {
@@ -74,6 +83,23 @@ export default async function SummaryPage() {
         <StatCard label="จบครบทุกชุด" value={maxed} sub="คน" accent="text-amber-300" />
         <StatCard label="กำลังเรียน" value={started - maxed} sub="คน" accent="text-sky-300" />
       </div>
+
+      {/* เทียบกับเกณฑ์ชั้น */}
+      <section className="card p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-xl font-extrabold text-ink">เทียบกับเกณฑ์ชั้น <span className="text-sm font-semibold text-slate-400">(ป.X ควรอยู่ชุด X)</span></h2>
+          <div className="flex flex-wrap gap-2 text-xs font-semibold">
+            <span className="chip bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">🌟 เก่งกว่าเกณฑ์ {ahead.length}</span>
+            <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามเกณฑ์ {onTrack}</span>
+            <span className="chip bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30">⚠️ อ่อนกว่าเกณฑ์ {behind.length}</span>
+            {notStarted > 0 && <span className="chip bg-white/5 text-slate-400 ring-1 ring-white/10">ยังไม่เริ่ม {notStarted}</span>}
+          </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FlagList title="🌟 เก่งกว่าเกณฑ์" tone="ahead" items={ahead} empty="ยังไม่มีใครเกินเกณฑ์ชั้น" />
+          <FlagList title="⚠️ อ่อนกว่าเกณฑ์ — ควรช่วยเหลือ" tone="behind" items={behind} empty="ไม่มีใครต่ำกว่าเกณฑ์ชั้น 👍" />
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Tier distribution */}
@@ -152,4 +178,32 @@ export default async function SummaryPage() {
 function fmtTime(ts?: string) {
   if (!ts) return "";
   return new Date(ts).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+const stripTitle = (name: string) => name.replace(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นางสาว|นาง)\s*/, "");
+
+function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind"; items: { r: any; lvl: number; diff: number }[]; empty: string }) {
+  const accent = tone === "ahead" ? "text-emerald-300" : "text-rose-300";
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+      <h3 className={`mb-2 text-sm font-extrabold ${accent}`}>{title}</h3>
+      {items.length === 0 ? (
+        <div className="py-6 text-center text-sm text-slate-400">{empty}</div>
+      ) : (
+        <div className="max-h-72 space-y-1 overflow-auto pr-1">
+          {items.map(({ r, lvl, diff }) => (
+            <Link key={r.id} href={`/student/${r.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition hover:bg-white/10">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-ink">{stripTitle(r.name)}</div>
+                <div className="text-[11px] text-slate-400">{gradeName(r.grade)} · ทำชุด {lvl}</div>
+              </div>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${diff > 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
+                {diff > 0 ? `+${diff}` : diff} ชุด
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
