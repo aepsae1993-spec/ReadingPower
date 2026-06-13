@@ -31,7 +31,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
           </div>
           <div className="text-right">
             <div className="text-4xl font-extrabold">{p.percent}%</div>
-            <div className="text-xs text-white/80">ความก้าวหน้ารวม</div>
+            <div className="text-sm text-white/80">ความก้าวหน้ารวม</div>
           </div>
         </div>
       </section>
@@ -45,7 +45,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
       {/* Current set stages */}
       {!p.isMaxed && (
         <section className="card p-5">
-          <h2 className="mb-3 text-lg font-extrabold text-ink">ชุด {curSet} — 3 ด่าน</h2>
+          <h2 className="mb-3 text-xl font-extrabold text-ink">ชุด {curSet} — 3 ด่าน</h2>
           <div className="space-y-3">
             {cur.stages.map((st) => {
               const Icon = STAGE_ICON[st.stage - 1];
@@ -53,9 +53,9 @@ export default async function StudentPage({ params }: { params: { id: string } }
               const active = st.stage === p.currentStage;
               return (
                 <div key={st.stage} className={`rounded-xl border p-3 ${st.complete ? "border-emerald-400/30 bg-emerald-500/10" : active ? "border-indigo-400/40 bg-indigo-500/10" : "border-white/10"}`}>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-bold text-ink"><Icon size={16} className="text-slate-400" /> ด่าน {st.stage}: {meta.name}</div>
-                    <span className="text-xs font-semibold text-slate-400">{st.passed}/{st.total} บท {st.complete ? "· ผ่าน ✓" : active ? "· กำลังเล่น" : ""}</span>
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-base font-bold text-ink"><Icon size={17} className="text-slate-300" /> ด่าน {st.stage}: {meta.name}</div>
+                    <span className="text-sm font-semibold text-slate-300">{st.passed}/{st.total} บท {st.complete ? "· ผ่าน ✓" : active ? "· กำลังเล่น" : ""}</span>
                   </div>
                   <ProgressBar value={st.passed} max={st.total} gradient={st.complete ? "from-emerald-400 to-emerald-600" : "from-indigo-500 to-fuchsia-500"} />
                 </div>
@@ -67,7 +67,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
 
       {/* Journey across 6 sets */}
       <section className="card p-5">
-        <h2 className="mb-3 text-lg font-extrabold text-ink">เส้นทาง 6 ชุด</h2>
+        <h2 className="mb-3 text-xl font-extrabold text-ink">เส้นทาง 6 ชุด</h2>
         <SetTrack p={p} />
       </section>
     </div>

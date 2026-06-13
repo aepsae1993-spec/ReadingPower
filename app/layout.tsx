@@ -23,8 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <BookOpenText size={20} className="drop-shadow" />
               </span>
               <div className="leading-tight">
-                <div className="text-sm font-extrabold text-ink">READING POWER</div>
-                <div className="text-[11px] text-slate-400">โรงเรียนวัดบางขุด (อุ่นพิทยาคาร)</div>
+                <div className="text-base font-extrabold tracking-wide text-ink">READING POWER</div>
+                <div className="text-xs text-slate-300">โรงเรียนวัดบางขุด (อุ่นพิทยาคาร)</div>
               </div>
             </Link>
             <nav className="flex items-center gap-1 text-sm font-semibold">

@@ -44,22 +44,22 @@ export default async function ClassPage({ params }: { params: { grade: string } 
       </section>
 
       <section className="card overflow-hidden">
-        <div className="border-b border-white/10 px-5 py-3.5">
-          <h2 className="text-lg font-extrabold text-ink">อันดับในห้อง</h2>
+        <div className="border-b border-white/10 px-5 py-4">
+          <h2 className="text-xl font-extrabold text-ink">อันดับในห้อง</h2>
         </div>
         <div className="divide-y divide-white/5">
           {rows.map((r) => (
             <Link key={r.id} href={`/student/${r.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-white/5">
               <RankMedal rank={r.rank!} />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-ink">{r.name}</div>
+                <div className="truncate text-base font-semibold text-ink">{r.name}</div>
                 <div className="mt-1 sm:hidden"><PositionPill p={r.progress} /></div>
               </div>
               <div className="hidden sm:block"><PositionPill p={r.progress} /></div>
               <LevelBadge p={r.progress} name={false} size="sm" />
               <div className="w-28 shrink-0">
                 <ProgressBar value={r.progress.totalPassed} max={r.progress.grandTotal} />
-                <div className="mt-0.5 text-right text-[10px] text-slate-400">{r.progress.percent}%</div>
+                <div className="mt-1 text-right text-[11px] font-medium text-slate-300">{r.progress.percent}%</div>
               </div>
             </Link>
           ))}

@@ -80,9 +80,9 @@ export function LevelBadge({ p, name = true, size = "sm" }: { p: Progress; name?
 export function StatCard({ label, value, sub, accent = "text-indigo-300" }: { label: string; value: React.ReactNode; sub?: string; accent?: string }) {
   return (
     <div className="card p-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">{label}</div>
       <div className={`mt-1 text-3xl font-extrabold tracking-tight ${accent}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-slate-400">{sub}</div>}
+      {sub && <div className="mt-0.5 text-sm text-slate-400">{sub}</div>}
     </div>
   );
 }
@@ -108,17 +108,17 @@ export function SetTrack({ p }: { p: Progress }) {
         return (
           <div key={sp.setNo} className={`rounded-xl border p-2.5 ${sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"}`}>
             <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-100">{t.emoji} ชุด {sp.setNo}</span>
-              {sp.complete && <span className="text-[10px] font-bold text-emerald-400">ผ่าน ✓</span>}
+              <span className="text-sm font-bold text-slate-100">{t.emoji} ชุด {sp.setNo}</span>
+              {sp.complete && <span className="text-[11px] font-bold text-emerald-400">ผ่าน ✓</span>}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {sp.stages.map((st) => {
                 const Icon = STAGE_ICON[st.stage - 1];
                 return (
                   <div key={st.stage} className="flex items-center gap-1.5">
-                    <Icon size={12} className="shrink-0 text-slate-500" />
+                    <Icon size={13} className="shrink-0 text-slate-400" />
                     <ProgressBar value={st.passed} max={st.total} height="h-1.5" gradient={t.grad} />
-                    <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-slate-500">{st.passed}/{st.total}</span>
+                    <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-slate-400">{st.passed}/{st.total}</span>
                   </div>
                 );
               })}
