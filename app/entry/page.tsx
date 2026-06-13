@@ -4,6 +4,7 @@ import EntrySelector from "@/components/EntrySelector";
 import EntryGrid from "@/components/EntryGrid";
 import ScoreGrid from "@/components/ScoreGrid";
 import { gradeName } from "@/lib/design";
+import { Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,13 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
       </div>
 
       <div className="card p-4">
-        <EntrySelector grade={grade} setNo={setNo} chapter={chapter} />
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <EntrySelector grade={grade} setNo={setNo} chapter={chapter} />
+          <a href={`/api/export/chapter?grade=${grade}&set=${setNo}&chapter=${chapter}`}
+            className="flex items-center gap-2 rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25">
+            <Download size={16} /> ดาวน์โหลด Excel (บทนี้)
+          </a>
+        </div>
         <div className="mt-3 text-sm text-slate-300">
           กำลังกรอก: <b className="text-indigo-300">{gradeName(grade)}</b> · ชุด {setNo} · บท {chapter}
           {test ? <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-300 ring-1 ring-amber-500/30">บททดสอบ</span> : null}

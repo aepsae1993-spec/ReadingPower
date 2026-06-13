@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { saveChecklist } from "@/app/entry/actions";
-import { REGULAR_ITEMS, REGULAR_PASS_RATIO } from "@/lib/types";
+import { REGULAR_ITEMS, REGULAR_PASS_RATIO, itemLevel } from "@/lib/types";
 import { Save, Check, Loader2 } from "lucide-react";
 
 const N = REGULAR_ITEMS; // 20 ข้อ
@@ -34,6 +34,15 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
 
   if (students.length === 0)
     return <div className="card p-6 text-center text-slate-400">ยังไม่มีนักเรียนในชั้นนี้ — เพิ่มที่เมนู “นักเรียน”</div>;
+
+  // วิเคราะห์ข้อสอบสด — นับจากคนที่มีคะแนน (กดแล้ว/เคยบันทึก)
+  const taken = rows.filter((r) => r.existed || r.items.some((v) => v));
+  const nT = taken.length;
+  const itemCorrect = Array.from({ length: N }, (_, i) => taken.reduce((a, r) => a + (r.items[i] ? 1 : 0), 0));
+  const totalScore = taken.reduce((a, r) => a + r.items.reduce((x, y) => x + y, 0), 0);
+  const totalMax = nT * N;
+  const chapterPct = totalMax ? Math.round((totalScore / totalMax) * 100) : 0;
+  const lvlColor = (lv: string) => (lv === "ง่าย" ? "bg-emerald-500/15 text-emerald-300" : lv === "ยาก" ? "bg-rose-500/15 text-rose-300" : "bg-amber-500/15 text-amber-300");
 
   return (
     <div className="space-y-3">
@@ -90,6 +99,35 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
           </button>
         </div>
       </div>
+
+      {nT > 0 && (
+        <div className="card overflow-auto p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-extrabold text-ink">วิเคราะห์ข้อสอบ (สด)</h3>
+            <span className="text-sm text-slate-300">ทั้งบท {totalScore}/{totalMax} · <b className="text-amber-300">{chapterPct}%</b> · จาก {nT} คน</span>
+          </div>
+          <table className="border-collapse text-center text-sm">
+            <tbody>
+              <tr>
+                <th className="border border-white/10 bg-slate-900 px-2 py-1.5 text-right font-bold text-slate-300">ข้อ</th>
+                {Array.from({ length: N }, (_, i) => <th key={i} className="w-10 border border-white/10 bg-slate-900 px-0 py-1.5 font-bold">{i + 1}</th>)}
+              </tr>
+              <tr>
+                <th className="border border-white/10 bg-slate-900 px-2 py-1.5 text-right font-semibold text-slate-300">ถูก (คน)</th>
+                {itemCorrect.map((c, i) => <td key={i} className="border border-white/10 px-0 py-1.5 tabular-nums text-emerald-300">{c}</td>)}
+              </tr>
+              <tr>
+                <th className="border border-white/10 bg-slate-900 px-2 py-1.5 text-right font-semibold text-slate-300">ระดับ</th>
+                {itemCorrect.map((c, i) => {
+                  const lv = itemLevel(c / nT);
+                  return <td key={i} className={`border border-white/10 px-0 py-1.5 text-xs font-bold ${lvlColor(lv)}`}>{lv}</td>;
+                })}
+              </tr>
+            </tbody>
+          </table>
+          <div className="mt-2 text-xs text-slate-400">ง่าย = ตอบถูก ≥80% · ยาก = ตอบถูก ≤25% · ดี = อยู่ระหว่างนั้น</div>
+        </div>
+      )}
     </div>
   );
 }

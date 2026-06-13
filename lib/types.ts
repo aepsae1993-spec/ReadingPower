@@ -30,6 +30,12 @@ export const TEST_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET / TEST_STEP }
 /** ทุกบท: 1..50 */
 export const ALL_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET }, (_, i) => i + 1);
 
+/** ระดับความยากง่ายรายข้อ จากสัดส่วนคนตอบถูก (p): ง่าย ≥0.8 · ยาก ≤0.25 · ที่เหลือ = ดี */
+export const ITEM_EASY_P = 0.8;
+export const ITEM_HARD_P = 0.25;
+export type ItemLevel = "ง่าย" | "ยาก" | "ดี";
+export const itemLevel = (p: number): ItemLevel => (p >= ITEM_EASY_P ? "ง่าย" : p <= ITEM_HARD_P ? "ยาก" : "ดี");
+
 export const isTestChapter = (c: number) => c % TEST_STEP === 0 && c >= 1 && c <= CHAPTERS_PER_SET;
 export const chapterFull = (c: number) => (isTestChapter(c) ? TEST_FULL : REGULAR_ITEMS);
 export function chapterPassed(chapter: number, score: number, total: number): boolean {

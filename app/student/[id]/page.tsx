@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/data.server";
+import { isConfigured } from "@/lib/supabase/server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET, TEST_FULL } from "@/lib/types";
 import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,14 @@ export default async function StudentPage({ params }: { params: { id: string } }
 
   return (
     <div className="space-y-6">
-      <Link href={`/class/${s.grade}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-indigo-300"><ArrowLeft size={16} /> ชั้น {gradeName(s.grade)}</Link>
+      <div className="flex items-center justify-between gap-2">
+        <Link href={`/class/${s.grade}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-indigo-300"><ArrowLeft size={16} /> ชั้น {gradeName(s.grade)}</Link>
+        {isConfigured() && (
+          <a href={`/api/export/student?id=${s.id}`} className="flex items-center gap-2 rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25">
+            <Download size={16} /> ดาวน์โหลด Excel
+          </a>
+        )}
+      </div>
 
       {/* Profile hero */}
       <section className={`card overflow-hidden`}>
