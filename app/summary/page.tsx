@@ -40,17 +40,17 @@ export default async function SummaryPage() {
     };
   });
 
-  // เทียบกับชุดที่แนะนำจาก Pre-Test (ถ้ายังไม่มี ใช้เกณฑ์ชั้น ป.X) — สูงกว่า = เก่งกว่าแผน, ต่ำกว่า = อ่อนกว่าแผน
+  // เทียบกับชุดที่แนะนำจาก Pre-Test (ถ้ายังไม่มี ใช้เกณฑ์ชั้น ป.X) + เทียบกับชั้น (gdiff)
   const withLevel = rows
     .filter((r) => r.progress.started)
     .map((r) => {
       const lvl = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
       const base = r.recommendedSet ?? r.grade;
-      return { r, lvl, base, diff: lvl - base };
+      return { r, lvl, base, diff: lvl - base, gdiff: lvl - r.grade };
     });
   const ahead = withLevel.filter((x) => x.diff > 0).sort((a, b) => b.diff - a.diff || a.r.grade - b.r.grade);
   const behind = withLevel.filter((x) => x.diff < 0).sort((a, b) => a.diff - b.diff || a.r.grade - b.r.grade);
-  const onTrack = withLevel.filter((x) => x.diff === 0).length;
+  const onPlan = withLevel.filter((x) => x.diff === 0).sort((a, b) => a.gdiff - b.gdiff || a.r.grade - b.r.grade);
 
   // กิจกรรมล่าสุด (เฉพาะเมื่อเชื่อม DB)
   let recent: any[] = [];
@@ -93,13 +93,14 @@ export default async function SummaryPage() {
           <h2 className="text-xl font-extrabold text-ink">เทียบกับชุดที่แนะนำ <span className="text-sm font-semibold text-slate-400">(Pre-Test · ถ้ายังไม่มีใช้เกณฑ์ชั้น)</span></h2>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="chip bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">🌟 เก่งกว่าแผน {ahead.length}</span>
-            <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามแผน {onTrack}</span>
+            <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามแผน {onPlan.length}</span>
             <span className="chip bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30">⚠️ อ่อนกว่าแผน {behind.length}</span>
             {notStarted > 0 && <span className="chip bg-white/5 text-slate-400 ring-1 ring-white/10">ยังไม่เริ่ม {notStarted}</span>}
           </div>
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           <FlagList title="🌟 เก่งกว่าแผน" tone="ahead" items={ahead} empty="ยังไม่มีใครเกินแผน" />
+          <FlagList title="✓ ตามแผน" tone="plan" items={onPlan} empty="—" />
           <FlagList title="⚠️ อ่อนกว่าแผน — ควรช่วยเหลือ" tone="behind" items={behind} empty="ไม่มีใครต่ำกว่าแผน 👍" />
         </div>
       </section>
@@ -185,23 +186,27 @@ function fmtTime(ts?: string) {
 
 const stripTitle = (name: string) => name.replace(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นางสาว|นาง)\s*/, "");
 
-function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind"; items: { r: any; lvl: number; base: number; diff: number }[]; empty: string }) {
-  const accent = tone === "ahead" ? "text-emerald-300" : "text-rose-300";
+function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind" | "plan"; items: { r: any; lvl: number; base: number; diff: number; gdiff: number }[]; empty: string }) {
+  const accent = tone === "ahead" ? "text-emerald-300" : tone === "behind" ? "text-rose-300" : "text-slate-200";
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-      <h3 className={`mb-2 text-sm font-extrabold ${accent}`}>{title}</h3>
+      <h3 className={`mb-2 text-sm font-extrabold ${accent}`}>{title} <span className="text-slate-400">({items.length})</span></h3>
       {items.length === 0 ? (
         <div className="py-6 text-center text-sm text-slate-400">{empty}</div>
       ) : (
         <div className="max-h-72 space-y-1 overflow-auto pr-1">
-          {items.map(({ r, lvl, base, diff }) => (
+          {items.map(({ r, lvl, base, diff, gdiff }) => (
             <Link key={r.id} href={`/student/${r.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition hover:bg-white/10">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-ink">{stripTitle(r.name)}</div>
-                <div className="text-[11px] text-slate-400">{gradeName(r.grade)} · แนะนำ ชุด {base} · ทำชุด {lvl}</div>
+                <div className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
+                  <span>{gradeName(r.grade)} · แนะนำ ชุด {base} · ทำชุด {lvl}</span>
+                  {gdiff > 0 && <span className="text-emerald-400">· สูงกว่าชั้น +{gdiff}</span>}
+                  {gdiff < 0 && <span className="text-rose-400">· ต่ำกว่าชั้น {gdiff}</span>}
+                </div>
               </div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${diff > 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
-                {diff > 0 ? `+${diff}` : diff} ชุด
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${diff > 0 ? "bg-emerald-500/15 text-emerald-300" : diff < 0 ? "bg-rose-500/15 text-rose-300" : "bg-white/10 text-slate-300"}`}>
+                {diff > 0 ? `+${diff} ชุด` : diff < 0 ? `${diff} ชุด` : `ชุด ${lvl}`}
               </span>
             </Link>
           ))}
