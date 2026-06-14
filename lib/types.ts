@@ -62,6 +62,9 @@ export function chapterSlots(): ChapterSlot[] {
   ];
 }
 
+export const POST_PASS_RATIO = 0.5; // Post-Test ผ่านที่ 50% → ปิดชุด เลื่อนขึ้นชุดถัดไป
+export const isPostTest = (c: number) => c === POST_READ || c === POST_RW;
+
 export const isValidChapterCode = (c: number) => (c >= 1 && c <= CHAPTERS_PER_SET) || SPECIAL_CODES.includes(c);
 export const slotKind = (c: number): SlotKind => (isTestChapter(c) ? "sentence" : "checklist");
 

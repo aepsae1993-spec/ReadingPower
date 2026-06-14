@@ -1,4 +1,4 @@
-import { ChapterResult, MAX_SET, CHAPTERS_PER_SET, ALL_CHAPTERS, isTestChapter, PRE_READ, PRE_RW, Student } from "./types";
+import { ChapterResult, MAX_SET, CHAPTERS_PER_SET, ALL_CHAPTERS, isTestChapter, PRE_READ, PRE_RW, POST_READ, POST_RW, Student } from "./types";
 
 // deterministic PRNG
 function rng(seed: number) { return () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; }
@@ -36,6 +36,13 @@ export function buildMock() {
           const score = frontier ? 8 + Math.floor(rand() * 6) : 16 + Math.floor(rand() * 5); // 8-13 / 16-20
           results.push({ studentId: s.id, setNo: set, chapter: c, score, total: 20 });
         }
+      }
+      // Post-Test เมื่อทำครบ 50 บท: ส่วนใหญ่ผ่าน (cleared) บางส่วนยังไม่ผ่าน/ไม่ทำ (รอ Post-Test)
+      if (upto >= CHAPTERS_PER_SET) {
+        const roll = rand();
+        if (roll < 0.82) for (const code of [POST_READ, POST_RW]) results.push({ studentId: s.id, setNo: set, chapter: code, score: 14 + Math.floor(rand() * 7), total: 20 });
+        else if (roll < 0.92) for (const code of [POST_READ, POST_RW]) results.push({ studentId: s.id, setNo: set, chapter: code, score: 5 + Math.floor(rand() * 4), total: 20 });
+        // ที่เหลือ: ยังไม่ทำ Post-Test → ค้างสถานะ "รอ Post-Test"
       }
     }
     // Pre-Test รายชุด (อ่าน/ถูกผิด) เพื่อให้ระบบจัดชุดเริ่มต้นทำงานในเดโม

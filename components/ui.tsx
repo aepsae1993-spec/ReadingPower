@@ -104,12 +104,13 @@ export function SetTrack({ p, hrefFor, selected }: { p: Progress; hrefFor?: (set
         const active = sp.setNo === p.currentSet && !p.isMaxed;
         const isSel = selected === sp.setNo;
         const tests = sp.cells.filter((c) => c.isTest);
-        const cls = `block rounded-xl border p-2.5 ${isSel ? "border-indigo-400 ring-2 ring-indigo-400/60 bg-indigo-500/10" : sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"} ${hrefFor ? "cursor-pointer transition hover:-translate-y-0.5" : ""}`;
+        const awaiting = sp.status === "awaiting";
+        const cls = `block rounded-xl border p-2.5 ${isSel ? "border-indigo-400 ring-2 ring-indigo-400/60 bg-indigo-500/10" : sp.complete ? "border-emerald-400/20 bg-emerald-500/10" : awaiting ? "border-amber-400/30 bg-amber-500/10" : active ? "border-indigo-400/50 bg-indigo-500/10 ring-1 ring-indigo-400/30" : "border-white/10 bg-white/5"} ${hrefFor ? "cursor-pointer transition hover:-translate-y-0.5" : ""}`;
         const inner = (
           <>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold text-slate-100">{t.emoji} ชุด {sp.setNo}</span>
-              {sp.complete ? <span className="text-[11px] font-bold text-emerald-400">ผ่าน ✓</span> : <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{sp.passed}/{sp.total}</span>}
+              {sp.complete ? <span className="text-[11px] font-bold text-emerald-400">ผ่าน ✓</span> : awaiting ? <span className="text-[11px] font-bold text-amber-400">⏳ รอ Post-Test</span> : <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{sp.passed}/{sp.total}</span>}
             </div>
             <ProgressBar value={sp.passed} max={sp.total} height="h-1.5" gradient={t.grad} />
             <div className="mt-2 grid grid-cols-5 gap-1">

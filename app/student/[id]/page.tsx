@@ -96,6 +96,18 @@ export default async function StudentPage({ params, searchParams }: { params: { 
             </Link>
           ))}
         </div>
+        {/* สถานะ Post-Test ของชุดที่ดู */}
+        {cur.status === "awaiting" && (
+          <div className="mb-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-200">
+            ⏳ ครบ 50 บทแล้ว — ทำ <b>Post-Test ชุด {selectedSet}</b> ให้ได้ ≥50% เพื่อปิดชุดและเลื่อนขึ้นชุดถัดไป
+            {cur.postPct != null && <span className="font-normal text-amber-300/90"> · ตอนนี้ได้ {Math.round(cur.postPct * 100)}% (ยังไม่ผ่าน)</span>}
+          </div>
+        )}
+        {cur.status === "cleared" && (
+          <div className="mb-3 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-200">
+            ✅ จบชุด {selectedSet} แล้ว{cur.postPct != null && ` · Post-Test ${Math.round(cur.postPct * 100)}%`} — เลื่อนขึ้นชุดถัดไปได้
+          </div>
+        )}
         <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
             {cur.cells.map((c) => {
               const state = c.score == null ? "empty" : c.passed ? "pass" : "fail";
