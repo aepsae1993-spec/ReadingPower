@@ -42,22 +42,27 @@ export default async function SummaryPage() {
 
   // เทียบกับเกณฑ์ชั้น: ป.X ควรอยู่ชุด X (diff = ชุด − ชั้น)
   // - เริ่มแล้ว → ใช้ชุดที่ทำจริง
-  // - ยังไม่เริ่ม แต่ Pre-Test แนะนำให้เริ่มต่ำกว่าชั้น → นับเป็น "ต่ำกว่าเกณฑ์" ทันที (ใช้ชุดที่แนะนำ)
-  const withLevel: { r: (typeof rows)[number]; lvl: number; rec: number | null; diff: number; started: boolean }[] = [];
-  let pending = 0; // ยังไม่เริ่ม และยังประเมินไม่ได้/ไม่ต่ำกว่าชั้น
+  // - ยังไม่เริ่ม แต่ Pre-Test ชุดประจำชั้นไม่ผ่าน (<50%) → "ต่ำกว่าเกณฑ์" ทันที (รู้ชุด = ใช้ชุดแนะนำ · ยังไม่รู้ = รอ Pre-Test ต่อ)
+  type FlagItem = { r: (typeof rows)[number]; lvl: number | null; rec: number | null; diff: number | null; started: boolean };
+  const ahead: FlagItem[] = [], onPlan: FlagItem[] = [], behind: FlagItem[] = [];
+  let pending = 0;
   rows.forEach((r) => {
     if (r.progress.started) {
       const lvl = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
-      withLevel.push({ r, lvl, rec: r.recommendedSet, diff: lvl - r.grade, started: true });
+      const diff = lvl - r.grade;
+      (diff > 0 ? ahead : diff < 0 ? behind : onPlan).push({ r, lvl, rec: r.recommendedSet, diff, started: true });
     } else if (r.recommendedSet != null && r.recommendedSet < r.grade) {
-      withLevel.push({ r, lvl: r.recommendedSet, rec: r.recommendedSet, diff: r.recommendedSet - r.grade, started: false });
+      behind.push({ r, lvl: r.recommendedSet, rec: r.recommendedSet, diff: r.recommendedSet - r.grade, started: false });
+    } else if (r.recommendedSet == null && r.placementNeed != null && r.placementNeed < r.grade) {
+      // ทำ Pre-Test ชุดประจำชั้นแล้วไม่ผ่าน กำลังถอยลง แต่ยังไม่ครบจนสรุปชุด → ต่ำกว่าเกณฑ์ (ยังไม่รู้ชุดแน่นอน)
+      behind.push({ r, lvl: null, rec: null, diff: null, started: false });
     } else {
       pending++;
     }
   });
-  const ahead = withLevel.filter((x) => x.diff > 0).sort((a, b) => b.diff - a.diff || a.r.grade - b.r.grade);
-  const behind = withLevel.filter((x) => x.diff < 0).sort((a, b) => a.diff - b.diff || a.r.grade - b.r.grade);
-  const onPlan = withLevel.filter((x) => x.diff === 0).sort((a, b) => a.r.grade - b.r.grade);
+  ahead.sort((a, b) => (b.diff! - a.diff!) || a.r.grade - b.r.grade);
+  behind.sort((a, b) => ((a.diff ?? 99) - (b.diff ?? 99)) || a.r.grade - b.r.grade);
+  onPlan.sort((a, b) => a.r.grade - b.r.grade);
 
   // กิจกรรมล่าสุด (เฉพาะเมื่อเชื่อม DB)
   let recent: any[] = [];
@@ -193,7 +198,7 @@ function fmtTime(ts?: string) {
 
 const stripTitle = (name: string) => name.replace(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นางสาว|นาง)\s*/, "");
 
-function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind" | "plan"; items: { r: any; lvl: number; rec: number | null; diff: number; started: boolean }[]; empty: string }) {
+function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind" | "plan"; items: { r: any; lvl: number | null; rec: number | null; diff: number | null; started: boolean }[]; empty: string }) {
   const accent = tone === "ahead" ? "text-emerald-300" : tone === "behind" ? "text-rose-300" : "text-slate-200";
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -208,16 +213,18 @@ function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" 
                 <div className="truncate text-sm font-semibold text-ink">{stripTitle(r.name)}</div>
                 <div className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
                   {started ? (
-                    <span>{gradeName(r.grade)} · ทำชุด {lvl}{rec != null ? ` · แนะนำ ชุด ${rec}` : ""}</span>
+                    <>
+                      <span>{gradeName(r.grade)} · ทำชุด {lvl}{rec != null ? ` · แนะนำ ชุด ${rec}` : ""}</span>
+                      {rec != null && lvl != null && lvl < rec && <span className="text-rose-400">· ต่ำกว่าที่แนะนำ</span>}
+                      {rec != null && lvl != null && lvl > rec && <span className="text-emerald-400">· เกินที่แนะนำ</span>}
+                    </>
                   ) : (
-                    <span>{gradeName(r.grade)} · <span className="text-amber-400">ยังไม่เริ่ม</span> · Pre-Test แนะนำชุด {lvl}</span>
+                    <span>{gradeName(r.grade)} · <span className="text-amber-400">ยังไม่เริ่ม</span> · {r.placementNote}</span>
                   )}
-                  {started && rec != null && lvl < rec && <span className="text-rose-400">· ต่ำกว่าที่แนะนำ</span>}
-                  {started && rec != null && lvl > rec && <span className="text-emerald-400">· เกินที่แนะนำ</span>}
                 </div>
               </div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${diff > 0 ? "bg-emerald-500/15 text-emerald-300" : diff < 0 ? "bg-rose-500/15 text-rose-300" : "bg-white/10 text-slate-300"}`}>
-                {diff > 0 ? `+${diff} ชุด` : diff < 0 ? `${diff} ชุด` : `ชุด ${lvl}`}
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${(diff ?? -1) > 0 ? "bg-emerald-500/15 text-emerald-300" : (diff ?? -1) < 0 ? "bg-rose-500/15 text-rose-300" : "bg-white/10 text-slate-300"}`}>
+                {diff == null ? "ต่ำกว่าชั้น" : diff > 0 ? `+${diff} ชุด` : diff < 0 ? `${diff} ชุด` : `ชุด ${lvl}`}
               </span>
             </Link>
           ))}
