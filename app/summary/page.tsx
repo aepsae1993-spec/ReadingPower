@@ -47,17 +47,21 @@ export default async function SummaryPage() {
   const ahead: FlagItem[] = [], onPlan: FlagItem[] = [], behind: FlagItem[] = [];
   let pending = 0;
   rows.forEach((r) => {
-    if (r.progress.started) {
-      const lvl = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
-      const diff = lvl - r.grade;
-      (diff > 0 ? ahead : diff < 0 ? behind : onPlan).push({ r, lvl, rec: r.recommendedSet, diff, started: true });
-    } else if (r.recommendedSet != null && r.recommendedSet > r.grade) {
-      // ยังไม่เริ่ม แต่ Pre-Test ชั้นตัวเอง ≥80% → ได้สิทธิ์ข้ามชุด → สูงกว่าเกณฑ์ทันที
-      ahead.push({ r, lvl: r.recommendedSet, rec: r.recommendedSet, diff: r.recommendedSet - r.grade, started: false });
-    } else if (r.recommendedSet != null && r.recommendedSet < r.grade) {
-      behind.push({ r, lvl: r.recommendedSet, rec: r.recommendedSet, diff: r.recommendedSet - r.grade, started: false });
-    } else if (r.recommendedSet == null && r.placementNeed != null && r.placementNeed < r.grade) {
-      // ทำ Pre-Test ชุดประจำชั้นแล้วไม่ผ่าน กำลังถอยลง แต่ยังไม่ครบจนสรุปชุด → ต่ำกว่าเกณฑ์ (ยังไม่รู้ชุดแน่นอน)
+    const rec = r.recommendedSet;
+    const skipUp = rec != null && rec > r.grade; // Pre-Test ชั้นตัวเอง ≥80% → ได้สิทธิ์ข้ามชุด
+    const started = r.progress.started;
+    const actual = started ? (r.progress.isMaxed ? MAX_SET : r.progress.currentSet) : null;
+
+    if (skipUp) {
+      // ≥80% ชั้นตัวเอง → สูงกว่าเกณฑ์เสมอ (ไม่ว่าจะเริ่มเรียนหรือยัง)
+      ahead.push({ r, lvl: actual, rec, diff: Math.max(actual ?? 0, rec!) - r.grade, started });
+    } else if (started) {
+      const diff = (actual as number) - r.grade;
+      (diff > 0 ? ahead : diff < 0 ? behind : onPlan).push({ r, lvl: actual, rec, diff, started: true });
+    } else if (rec != null && rec < r.grade) {
+      behind.push({ r, lvl: null, rec, diff: rec - r.grade, started: false });
+    } else if (rec == null && r.placementNeed != null && r.placementNeed < r.grade) {
+      // ทำ Pre-Test ชุดประจำชั้นไม่ผ่าน กำลังถอยลง แต่ยังไม่ครบจนสรุปชุด → ต่ำกว่าเกณฑ์ (ยังไม่รู้ชุดแน่นอน)
       behind.push({ r, lvl: null, rec: null, diff: null, started: false });
     } else {
       pending++;
