@@ -40,17 +40,16 @@ export default async function SummaryPage() {
     };
   });
 
-  // เทียบกับชุดที่แนะนำจาก Pre-Test (ถ้ายังไม่มี ใช้เกณฑ์ชั้น ป.X) + เทียบกับชั้น (gdiff)
+  // เทียบกับเกณฑ์ชั้น: ป.X ควรอยู่ชุด X (diff = ชุดที่ทำ − ชั้น) · ชุดที่ Pre-Test แนะนำ = ข้อมูลเสริม
   const withLevel = rows
     .filter((r) => r.progress.started)
     .map((r) => {
       const lvl = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
-      const base = r.recommendedSet ?? r.grade;
-      return { r, lvl, base, diff: lvl - base, gdiff: lvl - r.grade };
+      return { r, lvl, rec: r.recommendedSet, diff: lvl - r.grade };
     });
   const ahead = withLevel.filter((x) => x.diff > 0).sort((a, b) => b.diff - a.diff || a.r.grade - b.r.grade);
   const behind = withLevel.filter((x) => x.diff < 0).sort((a, b) => a.diff - b.diff || a.r.grade - b.r.grade);
-  const onPlan = withLevel.filter((x) => x.diff === 0).sort((a, b) => a.gdiff - b.gdiff || a.r.grade - b.r.grade);
+  const onPlan = withLevel.filter((x) => x.diff === 0).sort((a, b) => a.r.grade - b.r.grade);
 
   // กิจกรรมล่าสุด (เฉพาะเมื่อเชื่อม DB)
   let recent: any[] = [];
@@ -90,7 +89,7 @@ export default async function SummaryPage() {
       {/* เทียบกับเกณฑ์ชั้น */}
       <section className="card p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-extrabold text-ink">เทียบกับเกณฑ์ <span className="text-sm font-semibold text-slate-400">(ชุดที่แนะนำจาก Pre-Test · ถ้ายังไม่มีใช้เกณฑ์ชั้น)</span></h2>
+          <h2 className="text-xl font-extrabold text-ink">เทียบกับเกณฑ์ชั้น <span className="text-sm font-semibold text-slate-400">(ป.X ควรอยู่ชุด X)</span></h2>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="chip bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">🌟 สูงกว่าเกณฑ์ {ahead.length}</span>
             <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามเกณฑ์ {onPlan.length}</span>
@@ -186,7 +185,7 @@ function fmtTime(ts?: string) {
 
 const stripTitle = (name: string) => name.replace(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นางสาว|นาง)\s*/, "");
 
-function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind" | "plan"; items: { r: any; lvl: number; base: number; diff: number; gdiff: number }[]; empty: string }) {
+function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind" | "plan"; items: { r: any; lvl: number; rec: number | null; diff: number }[]; empty: string }) {
   const accent = tone === "ahead" ? "text-emerald-300" : tone === "behind" ? "text-rose-300" : "text-slate-200";
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -195,14 +194,14 @@ function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" 
         <div className="py-6 text-center text-sm text-slate-400">{empty}</div>
       ) : (
         <div className="max-h-72 space-y-1 overflow-auto pr-1">
-          {items.map(({ r, lvl, base, diff, gdiff }) => (
+          {items.map(({ r, lvl, rec, diff }) => (
             <Link key={r.id} href={`/student/${r.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition hover:bg-white/10">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-ink">{stripTitle(r.name)}</div>
                 <div className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
-                  <span>{gradeName(r.grade)} · แนะนำ ชุด {base} · ทำชุด {lvl}</span>
-                  {gdiff > 0 && <span className="text-emerald-400">· สูงกว่าชั้น +{gdiff}</span>}
-                  {gdiff < 0 && <span className="text-rose-400">· ต่ำกว่าชั้น {gdiff}</span>}
+                  <span>{gradeName(r.grade)} · ทำชุด {lvl}{rec != null ? ` · แนะนำ ชุด ${rec}` : ""}</span>
+                  {rec != null && lvl < rec && <span className="text-rose-400">· ต่ำกว่าที่แนะนำ</span>}
+                  {rec != null && lvl > rec && <span className="text-emerald-400">· เกินที่แนะนำ</span>}
                 </div>
               </div>
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${diff > 0 ? "bg-emerald-500/15 text-emerald-300" : diff < 0 ? "bg-rose-500/15 text-rose-300" : "bg-white/10 text-slate-300"}`}>
