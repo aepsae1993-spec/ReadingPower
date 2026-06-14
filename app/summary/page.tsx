@@ -51,6 +51,9 @@ export default async function SummaryPage() {
       const lvl = r.progress.isMaxed ? MAX_SET : r.progress.currentSet;
       const diff = lvl - r.grade;
       (diff > 0 ? ahead : diff < 0 ? behind : onPlan).push({ r, lvl, rec: r.recommendedSet, diff, started: true });
+    } else if (r.recommendedSet != null && r.recommendedSet > r.grade) {
+      // ยังไม่เริ่ม แต่ Pre-Test ชั้นตัวเอง ≥80% → ได้สิทธิ์ข้ามชุด → สูงกว่าเกณฑ์ทันที
+      ahead.push({ r, lvl: r.recommendedSet, rec: r.recommendedSet, diff: r.recommendedSet - r.grade, started: false });
     } else if (r.recommendedSet != null && r.recommendedSet < r.grade) {
       behind.push({ r, lvl: r.recommendedSet, rec: r.recommendedSet, diff: r.recommendedSet - r.grade, started: false });
     } else if (r.recommendedSet == null && r.placementNeed != null && r.placementNeed < r.grade) {
