@@ -3,7 +3,7 @@ import { Sarabun } from "next/font/google";
 import Link from "next/link";
 import Image from "next/image";
 import NextTopLoader from "nextjs-toploader";
-import { Trophy, School, Activity } from "lucide-react";
+import { Trophy, School, Activity, Microscope } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
 import "./globals.css";
 
@@ -41,6 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <Link href="/class/1" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
                 <School size={16} /> <span className="hidden sm:inline">ห้องเรียน</span>
+              </Link>
+              <Link href="/analysis" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
+                <Microscope size={16} /> <span className="hidden sm:inline">วิเคราะห์</span>
               </Link>
               <AuthNav />
             </nav>
