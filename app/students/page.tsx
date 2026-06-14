@@ -1,6 +1,7 @@
 import { createClient, isConfigured } from "@/lib/supabase/server";
 import { gradeName } from "@/lib/design";
 import { addStudent, bulkAddStudents, removeStudent } from "./actions";
+import DeleteScoresButton from "@/components/DeleteScoresButton";
 import { UserPlus, Trash2, Users2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,8 @@ export default async function StudentsPage() {
           </section>
         );
       })}
+
+      <DeleteScoresButton />
     </div>
   );
 }

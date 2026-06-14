@@ -36,3 +36,19 @@ export async function removeStudent(formData: FormData) {
   await sb.from("students").update({ active: false }).eq("id", id);
   revalidatePath("/students");
 }
+
+// รหัสผู้ดูแล (ตั้งผ่าน env ได้ · ค่าเริ่มต้น admin1234)
+const ADMIN_PASSWORD = process.env.ADMIN_DELETE_PASSWORD || "admin1234";
+
+/** ลบคะแนนทั้งหมด (chapter_scores) — เก็บข้อมูลนักเรียนไว้ · ต้องใส่รหัสผู้ดูแล */
+export async function deleteAllScores(password: string) {
+  const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "ยังไม่ได้เข้าสู่ระบบ" };
+  if (password !== ADMIN_PASSWORD) return { ok: false, error: "รหัสผู้ดูแลไม่ถูกต้อง" };
+
+  const { error, count } = await sb.from("chapter_scores").delete({ count: "exact" }).not("id", "is", null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, count: count ?? 0 };
+}
