@@ -2,10 +2,33 @@ import Link from "next/link";
 import { getAllStudents } from "@/lib/data.server";
 import { createClient, isConfigured } from "@/lib/supabase/server";
 import { gradeName, TIERS } from "@/lib/design";
-import { MAX_SET, chapterShort } from "@/lib/types";
+import { MAX_SET, chapterShort, chapterPassed } from "@/lib/types";
 import { StatCard, ProgressBar } from "@/components/ui";
 import AutoRefresh from "@/components/AutoRefresh";
-import { BookOpen, ChevronRight, History } from "lucide-react";
+import ProgressChart, { ChartPoint } from "@/components/ProgressChart";
+import { BookOpen, ChevronRight, History, TrendingUp } from "lucide-react";
+
+const WEEKS = 8;
+function startOfWeek(d: Date) { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - day); return x; }
+
+/** ความก้าวหน้าสะสม (บทที่ผ่าน) รายสัปดาห์ ย้อนหลัง 8 สัปดาห์ */
+async function progressSeries(passedSum: number): Promise<ChartPoint[]> {
+  const tw = startOfWeek(new Date());
+  const weeks = Array.from({ length: WEEKS }, (_, i) => { const s = new Date(tw); s.setDate(s.getDate() - (WEEKS - 1 - i) * 7); return s; });
+  const label = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
+
+  if (isConfigured()) {
+    const sb = createClient();
+    const { data } = await sb.from("chapter_scores").select("updated_at,chapter,score,total");
+    const passedAt = (data ?? [])
+      .filter((r: any) => r.updated_at && chapterPassed(r.chapter, r.score, r.total))
+      .map((r: any) => new Date(r.updated_at).getTime());
+    return weeks.map((w) => { const end = new Date(w); end.setDate(end.getDate() + 7); return { label: label(w), value: passedAt.filter((t) => t < end.getTime()).length }; });
+  }
+  // เดโม: สังเคราะห์เส้นโค้งสะสมให้จบที่ passedSum
+  const frac = [0.12, 0.22, 0.34, 0.45, 0.58, 0.7, 0.85, 1];
+  return weeks.map((w, i) => ({ label: label(w), value: Math.round(passedSum * frac[i]) }));
+}
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +40,8 @@ export default async function SummaryPage() {
   const avg = total ? Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / total) : 0;
   const passedSum = rows.reduce((a, r) => a + r.progress.totalPassed, 0);
   const grand = rows.reduce((a, r) => a + r.progress.grandTotal, 0);
+  const series = await progressSeries(passedSum);
+  const weekDelta = series.length >= 2 ? series[series.length - 1].value - series[series.length - 2].value : 0;
 
   // กระจายตามชุด (ระดับล่าสุดของแต่ละคน)
   const tierCounts = [0, 0, 0, 0, 0, 0];
@@ -105,6 +130,16 @@ export default async function SummaryPage() {
         <StatCard label="จบครบทุกชุด" value={maxed} sub="คน" accent="text-amber-300" />
         <StatCard label="กำลังเรียน" value={started - maxed} sub="คน" accent="text-sky-300" />
       </div>
+
+      {/* ความก้าวหน้าตามเวลา */}
+      <section className="card p-5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink"><TrendingUp size={20} className="text-indigo-300" /> ความก้าวหน้าตามเวลา</h2>
+          <span className="text-sm text-slate-300">บทที่ผ่านสะสม · <b className="text-emerald-300">สัปดาห์นี้ +{weekDelta}</b></span>
+        </div>
+        <ProgressChart points={series} />
+        <div className="mt-1 text-[11px] text-slate-500">8 สัปดาห์ล่าสุด (อิงวันที่บันทึกคะแนน){!isConfigured() && " · ตัวอย่างในโหมดเดโม"}</div>
+      </section>
 
       {/* เทียบกับเกณฑ์ชั้น */}
       <section className="card p-5">

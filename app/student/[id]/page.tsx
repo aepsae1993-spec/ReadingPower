@@ -5,6 +5,7 @@ import { isConfigured } from "@/lib/supabase/server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET, TEST_FULL } from "@/lib/types";
 import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
+import { computeBadges, earnedCount } from "@/lib/badges";
 import { ArrowLeft, Download, Compass } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,8 @@ export default async function StudentPage({ params, searchParams }: { params: { 
   const scoreSum = done.reduce((a, c) => a + (c.score ?? 0), 0);
   const scoreMax = done.reduce((a, c) => a + c.total, 0);
   const scorePct = scoreMax ? Math.round((scoreSum / scoreMax) * 100) : 0;
+
+  const badges = computeBadges(s);
 
   return (
     <div className="space-y-6">
@@ -110,6 +113,22 @@ export default async function StudentPage({ params, searchParams }: { params: { 
             })}
           </div>
         </section>
+
+      {/* เหรียญ & ความสำเร็จ */}
+      <section className="card p-5">
+        <h2 className="mb-3 text-xl font-extrabold text-ink">เหรียญ &amp; ความสำเร็จ <span className="text-sm font-semibold text-amber-300">({earnedCount(badges)}/{badges.length})</span></h2>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {badges.map((b) => (
+            <div key={b.key} className={`flex items-center gap-3 rounded-xl border p-3 ${b.earned ? "border-amber-400/40 bg-amber-500/10" : "border-white/10 bg-white/5"}`}>
+              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl ${b.earned ? "bg-amber-500/20" : "bg-slate-700/50 opacity-50 grayscale"}`}>{b.icon}</span>
+              <div className="min-w-0">
+                <div className={`text-sm font-bold ${b.earned ? "text-amber-200" : "text-slate-400"}`}>{b.label}</div>
+                <div className="text-[11px] text-slate-400">{b.earned ? b.desc : `🔒 ${b.desc}`}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Journey across 6 sets — คลิกเพื่อเลือกดูชุด */}
       <section className="card p-5">
