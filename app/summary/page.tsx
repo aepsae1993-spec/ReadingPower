@@ -90,18 +90,18 @@ export default async function SummaryPage() {
       {/* เทียบกับเกณฑ์ชั้น */}
       <section className="card p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-extrabold text-ink">เทียบกับชุดที่แนะนำ <span className="text-sm font-semibold text-slate-400">(Pre-Test · ถ้ายังไม่มีใช้เกณฑ์ชั้น)</span></h2>
+          <h2 className="text-xl font-extrabold text-ink">เทียบกับเกณฑ์ <span className="text-sm font-semibold text-slate-400">(ชุดที่แนะนำจาก Pre-Test · ถ้ายังไม่มีใช้เกณฑ์ชั้น)</span></h2>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="chip bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">🌟 เก่งกว่าแผน {ahead.length}</span>
-            <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามแผน {onPlan.length}</span>
-            <span className="chip bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30">⚠️ อ่อนกว่าแผน {behind.length}</span>
+            <span className="chip bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">🌟 สูงกว่าเกณฑ์ {ahead.length}</span>
+            <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามเกณฑ์ {onPlan.length}</span>
+            <span className="chip bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30">⚠️ ต่ำกว่าเกณฑ์ {behind.length}</span>
             {notStarted > 0 && <span className="chip bg-white/5 text-slate-400 ring-1 ring-white/10">ยังไม่เริ่ม {notStarted}</span>}
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
-          <FlagList title="🌟 เก่งกว่าแผน" tone="ahead" items={ahead} empty="ยังไม่มีใครเกินแผน" />
-          <FlagList title="✓ ตามแผน" tone="plan" items={onPlan} empty="—" />
-          <FlagList title="⚠️ อ่อนกว่าแผน — ควรช่วยเหลือ" tone="behind" items={behind} empty="ไม่มีใครต่ำกว่าแผน 👍" />
+          <FlagList title="🌟 สูงกว่าเกณฑ์" tone="ahead" items={ahead} empty="ยังไม่มีใครสูงกว่าเกณฑ์" />
+          <FlagList title="✓ ตามเกณฑ์" tone="plan" items={onPlan} empty="—" />
+          <FlagList title="⚠️ ต่ำกว่าเกณฑ์ — ควรช่วยเหลือ" tone="behind" items={behind} empty="ไม่มีใครต่ำกว่าเกณฑ์ 👍" />
         </div>
       </section>
 
