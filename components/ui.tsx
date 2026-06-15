@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { tier } from "@/lib/design";
-import { Progress } from "@/lib/progression";
+import { Progress, SetProgress } from "@/lib/progression";
+import { TEST_FULL } from "@/lib/types";
 import { Crown } from "lucide-react";
 
 /** ช่อมะกอกประดับเหรียญ */
@@ -125,6 +126,47 @@ export function SetTrack({ p, hrefFor, selected }: { p: Progress; hrefFor?: (set
           ? <Link key={sp.setNo} href={hrefFor(sp.setNo)} scroll={false} className={cls}>{inner}</Link>
           : <div key={sp.setNo} className={cls}>{inner}</div>;
       })}
+    </div>
+  );
+}
+
+/** รายละเอียดคะแนน 50 บทของชุดเดียว (ใช้ทั้งหน้านักเรียน + รายงานผู้ปกครอง) */
+export function SetDetail({ setNo, cur }: { setNo: number; cur: SetProgress }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+        <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ไม่ผ่าน</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่กรอก</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> แต่งประโยค (เต็ม {TEST_FULL})</span>
+      </div>
+      {cur.status === "awaiting" && (
+        <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-200">
+          ⏳ ครบ 50 บทแล้ว — ทำ <b>Post-Test ชุด {setNo}</b> ให้ได้ ≥50% เพื่อปิดชุดและเลื่อนขึ้นชุดถัดไป
+          {cur.postPct != null && <span className="font-normal text-amber-300/90"> · ตอนนี้ได้ {Math.round(cur.postPct * 100)}% (ยังไม่ผ่าน)</span>}
+        </div>
+      )}
+      {cur.status === "cleared" && (
+        <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-200">
+          ✅ จบชุด {setNo} แล้ว{cur.postPct != null && ` · Post-Test ${Math.round(cur.postPct * 100)}%`}
+        </div>
+      )}
+      <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+        {cur.cells.map((c) => {
+          const state = c.score == null ? "empty" : c.passed ? "pass" : "fail";
+          return (
+            <div key={c.chapter} title={`บท ${c.chapter}${c.score == null ? "" : ` · ${c.score}/${c.total}`}`}
+              className={`rounded-lg border p-1.5 text-center ${c.isTest ? "ring-1 ring-amber-400/50" : ""} ${state === "pass" ? "border-emerald-400/30 bg-emerald-500/10" : state === "fail" ? "border-rose-400/30 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
+              <div className="text-[11px] font-medium text-slate-400">บท {c.chapter}</div>
+              <div className={`leading-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>
+                {c.score == null
+                  ? <span className="text-base font-extrabold">–</span>
+                  : <><span className="text-base font-extrabold">{c.score}</span><span className="text-[10px] font-semibold text-slate-500">/{c.total}</span></>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

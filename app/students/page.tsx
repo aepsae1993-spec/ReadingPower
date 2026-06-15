@@ -2,6 +2,7 @@ import { createClient, isConfigured } from "@/lib/supabase/server";
 import { gradeName } from "@/lib/design";
 import { addStudent, bulkAddStudents, removeStudent } from "./actions";
 import DeleteScoresButton from "@/components/DeleteScoresButton";
+import ParentLinkButton from "@/components/ParentLinkButton";
 import { UserPlus, Trash2, Users2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +18,12 @@ export default async function StudentsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-extrabold text-ink"><Users2 /> จัดการนักเรียน</h1>
-        <p className="text-sm text-slate-400">เพิ่มทีละคน หรือวางหลายชื่อ (บรรทัดละ 1 ชื่อ) · ทั้งหมด {students?.length ?? 0} คน</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-ink"><Users2 /> จัดการนักเรียน</h1>
+          <p className="text-sm text-slate-400">เพิ่มทีละคน หรือวางหลายชื่อ (บรรทัดละ 1 ชื่อ) · ทั้งหมด {students?.length ?? 0} คน</p>
+        </div>
+        <ParentLinkButton label="ลิงก์ผู้ปกครอง (ค้นหาชื่อ)" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

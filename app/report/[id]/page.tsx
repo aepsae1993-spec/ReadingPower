@@ -2,17 +2,21 @@ import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
-import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
+import { SetTrack, SetDetail, StatCard, LevelBadge } from "@/components/ui";
 import { computeBadges } from "@/lib/badges";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportPage({ params }: { params: { id: string } }) {
+const clampSet = (n: number) => (Number.isFinite(n) ? Math.min(Math.max(Math.trunc(n), 1), MAX_SET) : 1);
+
+export default async function ReportPage({ params, searchParams }: { params: { id: string }; searchParams: { set?: string } }) {
   const s = await getStudent(params.id);
   if (!s) notFound();
   const p = s.progress;
   const levelSet = p.isMaxed ? MAX_SET : p.currentSet;
   const t = tier(levelSet);
+  const selectedSet = clampSet(+(searchParams?.set ?? (p.started ? levelSet : 1)));
+  const cur = p.bySet[selectedSet - 1];
 
   const done = p.bySet.flatMap((sp) => sp.cells).filter((c) => c.score != null);
   const scoreSum = done.reduce((a, c) => a + (c.score ?? 0), 0);
@@ -51,14 +55,14 @@ export default async function ReportPage({ params }: { params: { id: string } })
       </div>
 
       <section className="card p-5">
-        <h2 className="mb-3 text-xl font-extrabold text-ink">เส้นทาง 6 ชุด</h2>
-        <SetTrack p={p} />
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-          <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ยังไม่ผ่าน</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่ทำ</span>
-          <span>· ยิ่งชุดสูงยิ่งเก่ง (ชุด 1 → 6)</span>
-        </div>
+        <h2 className="mb-3 text-xl font-extrabold text-ink">เส้นทาง 6 ชุด <span className="text-sm font-semibold text-slate-400">(แตะเพื่อดูคะแนนแต่ละชุด)</span></h2>
+        <SetTrack p={p} selected={selectedSet} hrefFor={(n) => `/report/${s.id}?set=${n}`} />
+      </section>
+
+      {/* คะแนนรายบทของชุดที่เลือก */}
+      <section className="card p-5">
+        <h2 className="mb-3 text-xl font-extrabold text-ink">คะแนนรายบท — ชุด {selectedSet}</h2>
+        <SetDetail setNo={selectedSet} cur={cur} />
       </section>
 
       {earned.length > 0 && (

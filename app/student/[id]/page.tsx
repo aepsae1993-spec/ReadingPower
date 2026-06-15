@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/data.server";
 import { isConfigured } from "@/lib/supabase/server";
 import { gradeName, tier } from "@/lib/design";
-import { MAX_SET, TEST_FULL } from "@/lib/types";
-import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
+import { MAX_SET } from "@/lib/types";
+import { SetTrack, SetDetail, StatCard, LevelBadge } from "@/components/ui";
 import { computeBadges, earnedCount } from "@/lib/badges";
 import ParentLinkButton from "@/components/ParentLinkButton";
 import { ArrowLeft, Download, Compass } from "lucide-react";
@@ -82,15 +82,7 @@ export default async function StudentPage({ params, searchParams }: { params: { 
 
       {/* Selected set — all 50 chapters */}
       <section className="card p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-extrabold text-ink">ชุด {selectedSet} — 50 บท</h2>
-          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-400" /> ผ่าน</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-400/80" /> ไม่ผ่าน</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700" /> ยังไม่กรอก</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-slate-700 ring-1 ring-amber-400/70" /> แต่งประโยค (เต็ม {TEST_FULL})</span>
-          </div>
-        </div>
+        <h2 className="mb-3 text-xl font-extrabold text-ink">ชุด {selectedSet} — 50 บท</h2>
         {/* แท็บเลือกชุด — คลิกย้อนดูชุดอื่นได้ */}
         <div className="mb-3 flex flex-wrap gap-1.5">
           {Array.from({ length: MAX_SET }, (_, i) => i + 1).map((n) => (
@@ -100,35 +92,8 @@ export default async function StudentPage({ params, searchParams }: { params: { 
             </Link>
           ))}
         </div>
-        {/* สถานะ Post-Test ของชุดที่ดู */}
-        {cur.status === "awaiting" && (
-          <div className="mb-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-200">
-            ⏳ ครบ 50 บทแล้ว — ทำ <b>Post-Test ชุด {selectedSet}</b> ให้ได้ ≥50% เพื่อปิดชุดและเลื่อนขึ้นชุดถัดไป
-            {cur.postPct != null && <span className="font-normal text-amber-300/90"> · ตอนนี้ได้ {Math.round(cur.postPct * 100)}% (ยังไม่ผ่าน)</span>}
-          </div>
-        )}
-        {cur.status === "cleared" && (
-          <div className="mb-3 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-200">
-            ✅ จบชุด {selectedSet} แล้ว{cur.postPct != null && ` · Post-Test ${Math.round(cur.postPct * 100)}%`} — เลื่อนขึ้นชุดถัดไปได้
-          </div>
-        )}
-        <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
-            {cur.cells.map((c) => {
-              const state = c.score == null ? "empty" : c.passed ? "pass" : "fail";
-              return (
-                <div key={c.chapter} title={`บท ${c.chapter}${c.score == null ? "" : ` · ${c.score}/${c.total}`}`}
-                  className={`rounded-lg border p-1.5 text-center ${c.isTest ? "ring-1 ring-amber-400/50" : ""} ${state === "pass" ? "border-emerald-400/30 bg-emerald-500/10" : state === "fail" ? "border-rose-400/30 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
-                  <div className="text-[11px] font-medium text-slate-400">บท {c.chapter}</div>
-                  <div className={`leading-tight ${state === "pass" ? "text-emerald-300" : state === "fail" ? "text-rose-300" : "text-slate-600"}`}>
-                    {c.score == null
-                      ? <span className="text-base font-extrabold">–</span>
-                      : <><span className="text-base font-extrabold">{c.score}</span><span className="text-[10px] font-semibold text-slate-500">/{c.total}</span></>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <SetDetail setNo={selectedSet} cur={cur} />
+      </section>
 
       {/* เหรียญ & ความสำเร็จ */}
       <section className="card p-5">
