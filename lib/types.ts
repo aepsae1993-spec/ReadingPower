@@ -30,11 +30,11 @@ export const TEST_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET / TEST_STEP }
 /** ทุกบท: 1..50 */
 export const ALL_CHAPTERS = Array.from({ length: CHAPTERS_PER_SET }, (_, i) => i + 1);
 
-/** ระดับความยากง่ายรายข้อ จากสัดส่วนคนตอบถูก (p): ง่าย ≥0.8 · ยาก ≤0.25 · ที่เหลือ = ดี */
+/** ระดับรายข้อ จากสัดส่วนคนตอบถูก (p): ง่าย ≥80% · ยาก <50% (ตอบถูกน้อยกว่าครึ่ง) · ที่เหลือ = ดี */
 export const ITEM_EASY_P = 0.8;
-export const ITEM_HARD_P = 0.25;
+export const ITEM_HARD_P = 0.5;
 export type ItemLevel = "ง่าย" | "ยาก" | "ดี";
-export const itemLevel = (p: number): ItemLevel => (p >= ITEM_EASY_P ? "ง่าย" : p <= ITEM_HARD_P ? "ยาก" : "ดี");
+export const itemLevel = (p: number): ItemLevel => (p >= ITEM_EASY_P ? "ง่าย" : p < ITEM_HARD_P ? "ยาก" : "ดี");
 
 /** บทที่หาร 5 ลงตัว (5,10,...,50) = บทแต่งประโยค (กรอกคะแนนเต็ม 15) */
 export const isTestChapter = (c: number) => c % TEST_STEP === 0 && c >= 1 && c <= CHAPTERS_PER_SET;

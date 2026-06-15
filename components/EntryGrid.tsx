@@ -127,7 +127,7 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
               </tr>
             </tbody>
           </table>
-          <div className="mt-2 text-xs text-slate-400">ง่าย = ตอบถูก ≥80% · ยาก = ตอบถูก ≤25% · ดี = อยู่ระหว่างนั้น</div>
+          <div className="mt-2 text-xs text-slate-400">ง่าย = ตอบถูก ≥80% · ดี = 50–79% · ยาก = ตอบถูก &lt;50%</div>
         </div>
       )}
     </div>
