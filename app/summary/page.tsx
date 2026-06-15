@@ -65,35 +65,42 @@ export default async function SummaryPage() {
     };
   });
 
-  // เทียบกับเกณฑ์ชั้น: ป.X ควรอยู่ชุด X (diff = ชุด − ชั้น)
-  // - เริ่มแล้ว → ใช้ชุดที่ทำจริง
-  // - ยังไม่เริ่ม แต่ Pre-Test ชุดประจำชั้นไม่ผ่าน (<50%) → "ต่ำกว่าเกณฑ์" ทันที (รู้ชุด = ใช้ชุดแนะนำ · ยังไม่รู้ = รอ Pre-Test ต่อ)
-  type FlagItem = { r: (typeof rows)[number]; lvl: number | null; rec: number | null; diff: number | null; started: boolean };
+  // จัดกลุ่ม:
+  // - สูงกว่าเกณฑ์ (เก่ง) = ทำบทเฉลี่ย > 70% และ Post-Test (ดีสุด) > 70% → โชว์แค่ ป./ชุด/บท ปัจจุบัน
+  // - ต่ำกว่าเกณฑ์ = Pre-Test ชั้นตัวเอง < 50%
+  // - ตามเกณฑ์ (ปกติ) = Pre-Test ≥ 50% หรือเริ่มเรียนแล้ว (ที่ไม่เข้าสองกลุ่มบน)
+  type FlagItem = { r: (typeof rows)[number]; sort: number; badge: string; tone: "emerald" | "rose" | "slate"; sub: string };
   const ahead: FlagItem[] = [], onPlan: FlagItem[] = [], behind: FlagItem[] = [];
   let pending = 0;
   rows.forEach((r) => {
-    const rec = r.recommendedSet;
-    const skipUp = rec != null && rec > r.grade; // Pre-Test ชั้นตัวเอง ≥80% → ได้สิทธิ์ข้ามชุด
-    const started = r.progress.started;
-    const actual = started ? (r.progress.isMaxed ? MAX_SET : r.progress.currentSet) : null;
+    const p = r.progress;
+    const started = p.started;
+    const curSet = p.isMaxed ? MAX_SET : p.currentSet;
+    const cells = p.bySet.flatMap((sp) => sp.cells).filter((c) => c.score != null);
+    const sMax = cells.reduce((a, c) => a + c.total, 0);
+    const avgRaw = sMax > 0 ? (cells.reduce((a, c) => a + (c.score ?? 0), 0) / sMax) * 100 : 0;
+    const posts = p.bySet.map((sp) => sp.postPct).filter((x): x is number => x != null);
+    const bestPost = posts.length ? Math.max(...posts) : null;
+    const isHigh = started && avgRaw > 70 && bestPost != null && bestPost * 100 > 70;
 
-    if (skipUp) {
-      // ≥80% ชั้นตัวเอง → สูงกว่าเกณฑ์เสมอ (ไม่ว่าจะเริ่มเรียนหรือยัง)
-      ahead.push({ r, lvl: actual, rec, diff: Math.max(actual ?? 0, rec!) - r.grade, started });
-    } else if (started) {
-      const diff = (actual as number) - r.grade;
-      (diff > 0 ? ahead : diff < 0 ? behind : onPlan).push({ r, lvl: actual, rec, diff, started: true });
-    } else if (rec != null && rec < r.grade) {
-      behind.push({ r, lvl: null, rec, diff: rec - r.grade, started: false });
-    } else if (rec == null && r.placementNeed != null && r.placementNeed < r.grade) {
-      // ทำ Pre-Test ชุดประจำชั้นไม่ผ่าน กำลังถอยลง แต่ยังไม่ครบจนสรุปชุด → ต่ำกว่าเกณฑ์ (ยังไม่รู้ชุดแน่นอน)
-      behind.push({ r, lvl: null, rec: null, diff: null, started: false });
+    // ผล Pre-Test ชั้นตัวเอง (จาก placement): ต่ำกว่าชั้น = Pre-Test <50%
+    const recBelow = (r.recommendedSet != null && r.recommendedSet < r.grade) || (r.recommendedSet == null && r.placementNeed != null && r.placementNeed < r.grade);
+    const pretestOk = r.recommendedSet != null && r.recommendedSet >= r.grade; // Pre-Test ≥50%
+
+    const pos = started ? `${gradeName(r.grade)} · ชุด ${curSet} · บท ${p.currentChapter}` : `${gradeName(r.grade)} · ยังไม่เริ่ม`;
+
+    if (isHigh) {
+      ahead.push({ r, sort: avgRaw, badge: `เฉลี่ย ${Math.round(avgRaw)}%`, tone: "emerald", sub: pos });
+    } else if (recBelow) {
+      behind.push({ r, sort: r.grade, badge: "ต่ำกว่าเกณฑ์", tone: "rose", sub: started ? pos : `${gradeName(r.grade)} · ยังไม่เริ่ม · ${r.placementNote}` });
+    } else if (pretestOk || started) {
+      onPlan.push({ r, sort: r.grade, badge: started ? `ชุด ${curSet}` : "พร้อมเริ่ม", tone: "slate", sub: pos });
     } else {
       pending++;
     }
   });
-  ahead.sort((a, b) => (b.diff! - a.diff!) || a.r.grade - b.r.grade);
-  behind.sort((a, b) => ((a.diff ?? 99) - (b.diff ?? 99)) || a.r.grade - b.r.grade);
+  ahead.sort((a, b) => b.sort - a.sort || a.r.grade - b.r.grade);
+  behind.sort((a, b) => a.r.grade - b.r.grade);
   onPlan.sort((a, b) => a.r.grade - b.r.grade);
 
   // กิจกรรมล่าสุด (เฉพาะเมื่อเชื่อม DB)
@@ -144,7 +151,7 @@ export default async function SummaryPage() {
       {/* เทียบกับเกณฑ์ชั้น */}
       <section className="card p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-extrabold text-ink">เทียบกับเกณฑ์ชั้น <span className="text-sm font-semibold text-slate-400">(ป.X ควรอยู่ชุด X)</span></h2>
+          <h2 className="text-xl font-extrabold text-ink">เทียบกับเกณฑ์ <span className="text-sm font-semibold text-slate-400">(เก่ง = เฉลี่ย &amp; Post-Test &gt;70% · ต่ำกว่า = Pre-Test &lt;50%)</span></h2>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="chip bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">🌟 สูงกว่าเกณฑ์ {ahead.length}</span>
             <span className="chip bg-white/10 text-slate-200 ring-1 ring-white/10">✓ ตามเกณฑ์ {onPlan.length}</span>
@@ -153,9 +160,9 @@ export default async function SummaryPage() {
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
-          <FlagList title="🌟 สูงกว่าเกณฑ์" tone="ahead" items={ahead} empty="ยังไม่มีใครสูงกว่าเกณฑ์" />
-          <FlagList title="✓ ตามเกณฑ์" tone="plan" items={onPlan} empty="—" />
-          <FlagList title="⚠️ ต่ำกว่าเกณฑ์ — ควรช่วยเหลือ" tone="behind" items={behind} empty="ไม่มีใครต่ำกว่าเกณฑ์ 👍" />
+          <FlagList title="🌟 สูงกว่าเกณฑ์ (เก่ง)" accent="text-emerald-300" items={ahead} empty="ยังไม่มีใครเข้าเกณฑ์เก่ง" />
+          <FlagList title="✓ ตามเกณฑ์" accent="text-slate-200" items={onPlan} empty="—" />
+          <FlagList title="⚠️ ต่ำกว่าเกณฑ์ — ควรช่วยเหลือ" accent="text-rose-300" items={behind} empty="ไม่มีใครต่ำกว่าเกณฑ์ 👍" />
         </div>
       </section>
 
@@ -240,8 +247,8 @@ function fmtTime(ts?: string) {
 
 const stripTitle = (name: string) => name.replace(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นางสาว|นาง)\s*/, "");
 
-function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" | "behind" | "plan"; items: { r: any; lvl: number | null; rec: number | null; diff: number | null; started: boolean }[]; empty: string }) {
-  const accent = tone === "ahead" ? "text-emerald-300" : tone === "behind" ? "text-rose-300" : "text-slate-200";
+function FlagList({ title, accent, items, empty }: { title: string; accent: string; items: { r: any; badge: string; tone: "emerald" | "rose" | "slate"; sub: string }[]; empty: string }) {
+  const badgeCls = (t: string) => (t === "emerald" ? "bg-emerald-500/15 text-emerald-300" : t === "rose" ? "bg-rose-500/15 text-rose-300" : "bg-white/10 text-slate-300");
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-3">
       <h3 className={`mb-2 text-sm font-extrabold ${accent}`}>{title} <span className="text-slate-400">({items.length})</span></h3>
@@ -249,25 +256,13 @@ function FlagList({ title, tone, items, empty }: { title: string; tone: "ahead" 
         <div className="py-6 text-center text-sm text-slate-400">{empty}</div>
       ) : (
         <div className="max-h-72 space-y-1 overflow-auto pr-1">
-          {items.map(({ r, lvl, rec, diff, started }) => (
+          {items.map(({ r, badge, tone, sub }) => (
             <Link key={r.id} href={`/student/${r.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition hover:bg-white/10">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-ink">{stripTitle(r.name)}</div>
-                <div className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
-                  {started ? (
-                    <>
-                      <span>{gradeName(r.grade)} · ทำชุด {lvl}{rec != null ? ` · แนะนำ ชุด ${rec}` : ""}</span>
-                      {rec != null && lvl != null && lvl < rec && <span className="text-rose-400">· ต่ำกว่าที่แนะนำ</span>}
-                      {rec != null && lvl != null && lvl > rec && <span className="text-emerald-400">· เกินที่แนะนำ</span>}
-                    </>
-                  ) : (
-                    <span>{gradeName(r.grade)} · <span className="text-amber-400">ยังไม่เริ่ม</span> · {r.placementNote}</span>
-                  )}
-                </div>
+                <div className="truncate text-[11px] text-slate-400">{sub}</div>
               </div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${(diff ?? -1) > 0 ? "bg-emerald-500/15 text-emerald-300" : (diff ?? -1) < 0 ? "bg-rose-500/15 text-rose-300" : "bg-white/10 text-slate-300"}`}>
-                {diff == null ? "ต่ำกว่าชั้น" : diff > 0 ? `+${diff} ชุด` : diff < 0 ? `${diff} ชุด` : `ชุด ${lvl}`}
-              </span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${badgeCls(tone)}`}>{badge}</span>
             </Link>
           ))}
         </div>
