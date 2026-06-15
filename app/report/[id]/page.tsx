@@ -33,16 +33,16 @@ export default async function ReportPage({ params, searchParams }: { params: { i
 
       {/* Profile hero */}
       <section className="card overflow-hidden">
-        <div className={`flex flex-wrap items-center gap-4 bg-gradient-to-br ${t.grad} px-6 py-6 text-white`}>
-          <span className="grid h-20 w-20 place-items-center rounded-3xl bg-white/20 text-4xl backdrop-blur">{p.isMaxed ? "👑" : t.emoji}</span>
-          <div className="flex-1">
-            <h1 className="text-2xl font-extrabold drop-shadow-sm">{s.name}</h1>
+        <div className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 bg-gradient-to-br ${t.grad} px-4 py-5 text-white sm:gap-4 sm:px-6`}>
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/20 text-3xl backdrop-blur sm:h-20 sm:w-20 sm:rounded-3xl sm:text-4xl">{p.isMaxed ? "👑" : t.emoji}</span>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold leading-tight drop-shadow-sm sm:text-2xl">{s.name}</h1>
             <div className="text-sm text-white/80">{gradeName(s.grade)}</div>
-            <div className="mt-2"><LevelBadge p={p} size="md" /></div>
+            <div className="mt-1.5"><LevelBadge p={p} size="sm" /></div>
           </div>
-          <div className="text-right">
-            <div className="text-4xl font-extrabold">{progressPct}%</div>
-            <div className="text-sm text-white/80">ความก้าวหน้ารวม</div>
+          <div className="shrink-0 text-right">
+            <div className="text-3xl font-extrabold leading-none sm:text-4xl">{progressPct}%</div>
+            <div className="text-[11px] text-white/80 sm:text-sm">ก้าวหน้ารวม</div>
           </div>
         </div>
       </section>
@@ -54,19 +54,19 @@ export default async function ReportPage({ params, searchParams }: { params: { i
         <StatCard label="กำลังอยู่" value={p.isMaxed ? "จบแล้ว" : p.started ? `ชุด ${levelSet}` : "ยังไม่เริ่ม"} sub={p.started && !p.isMaxed ? `บท ${p.currentChapter}` : ""} accent="text-fuchsia-300" />
       </div>
 
-      <section className="card p-5">
+      <section className="card p-4 sm:p-5">
         <h2 className="mb-3 text-xl font-extrabold text-ink">เส้นทาง 6 ชุด <span className="text-sm font-semibold text-slate-400">(แตะเพื่อดูคะแนนแต่ละชุด)</span></h2>
         <SetTrack p={p} selected={selectedSet} hrefFor={(n) => `/report/${s.id}?set=${n}`} />
       </section>
 
       {/* คะแนนรายบทของชุดที่เลือก */}
-      <section className="card p-5">
+      <section className="card p-4 sm:p-5">
         <h2 className="mb-3 text-xl font-extrabold text-ink">คะแนนรายบท — ชุด {selectedSet}</h2>
         <SetDetail setNo={selectedSet} cur={cur} />
       </section>
 
       {earned.length > 0 && (
-        <section className="card p-5">
+        <section className="card p-4 sm:p-5">
           <h2 className="mb-3 text-xl font-extrabold text-ink">เหรียญที่ได้รับ 🏅 <span className="text-sm font-semibold text-amber-300">({earned.length})</span></h2>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {earned.map((b) => (
