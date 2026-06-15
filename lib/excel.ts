@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import {
   REGULAR_ITEMS, REGULAR_PASS_RATIO, TEST_FULL, TEST_PASS,
   slotKind, itemLevel, chapterPassed, chapterName, chapterShort, chapterSlots, MAX_SET, CHAPTERS_PER_SET,
+  PRE_READ, PRE_RW, POST_READ, POST_RW,
 } from "./types";
 
 const FONT = "TH Sarabun New";
@@ -68,15 +69,75 @@ export async function chapterWorkbookBuffer(opts: { grade: number; setNo: number
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
 
-/** ทั้งชุด (รายห้อง): หลายชีต — Pre-Test, บทที่มีคะแนน, Post-Test */
-export async function setWorkbookBuffer(opts: { grade: number; setNo: number; perChapter: { chapter: number; students: ChapterStudent[] }[] }): Promise<ArrayBuffer> {
+export interface PairStudent { no?: number | null; name: string; a: number | null; b: number | null }
+
+/** ชีตสรุป Pre/Post-Test รวม 2 ใบ (อ่าน + ถูกผิด) + เฉลี่ยรายคน */
+function buildPairSummary(wb: ExcelJS.Workbook, opts: { grade: number; setNo: number; kind: "pre" | "post"; rows: PairStudent[] }) {
+  const { grade, setNo, kind, rows } = opts;
+  const label = kind === "pre" ? "Pre-Test" : "Post-Test";
+  const COLS = 5;
+  const ws = wb.addWorksheet(`${label} รวม`, { views: [{ state: "frozen", ySplit: 4 }] });
+  printSetup(ws, "portrait");
+  ws.getColumn(1).width = 5; ws.getColumn(2).width = 30; ws.getColumn(3).width = 12; ws.getColumn(4).width = 12; ws.getColumn(5).width = 12;
+  const top = titleBlock(ws, COLS, [
+    { text: `${label} — รวม & เฉลี่ยรายคน`, big: true },
+    { text: `ชั้นประถมศึกษาปีที่ ${grade} ปีการศึกษา ${thaiYear()}` },
+    { text: `ชุดที่ ${setNo} · เต็มใบละ 20 · เฉลี่ย = (อ่าน + ถูกผิด) / 40` },
+  ]);
+  const HR = top + 1;
+  ["ที่", "ชื่อ-สกุล", "อ่าน (20)", "ถูกผิด (20)", "เฉลี่ย"].forEach((h, i) => {
+    const c = ws.getCell(HR, i + 1);
+    c.value = h; c.alignment = { horizontal: "center", vertical: "middle" }; c.font = { bold: true, name: FONT, size: 13 }; c.fill = fill(C.header); c.border = ALL_BORDERS;
+  });
+  ws.getRow(HR).height = 20;
+  let sumPct = 0, cntPct = 0;
+  rows.forEach((r, i) => {
+    const rr = HR + 1 + i;
+    const entered = [r.a, r.b].filter((x): x is number => x != null);
+    const pct = entered.length ? entered.reduce((a, b) => a + b, 0) / (20 * entered.length) : null;
+    setCell(ws, rr, 1, i + 1, { center: true, border: true });
+    setCell(ws, rr, 2, r.name, { border: true });
+    setCell(ws, rr, 3, r.a, { center: true, border: true });
+    setCell(ws, rr, 4, r.b, { center: true, border: true });
+    const pc = ws.getCell(rr, 5);
+    if (pct != null) { pc.value = pct; pc.numFmt = "0%"; }
+    pc.alignment = { horizontal: "center" }; pc.font = { name: FONT, size: 13, bold: true }; pc.border = ALL_BORDERS;
+    pc.fill = fill(pct == null ? C.total : pct >= 0.5 ? C.easy : C.hard);
+    ws.getRow(rr).height = 18;
+    if (pct != null) { sumPct += pct; cntPct++; }
+  });
+  const fr = HR + 1 + rows.length;
+  ws.mergeCells(fr, 1, fr, 2);
+  setCell(ws, fr, 1, "เฉลี่ยทั้งห้อง", { bold: true, center: true, fill: C.band, border: true });
+  setCell(ws, fr, 3, "", { fill: C.band, border: true });
+  setCell(ws, fr, 4, "", { fill: C.band, border: true });
+  const fpc = ws.getCell(fr, 5);
+  if (cntPct) { fpc.value = sumPct / cntPct; fpc.numFmt = "0%"; }
+  fpc.alignment = { horizontal: "center" }; fpc.font = { name: FONT, size: 13, bold: true }; fpc.fill = fill(C.band); fpc.border = ALL_BORDERS;
+}
+
+/** ส่งออก Pre/Post-Test: ชีตสรุปรวม+เฉลี่ย แล้วตามด้วยตารางรายข้อของ "อ่าน" และ "ถูกผิด" */
+export async function testPairWorkbookBuffer(opts: { grade: number; setNo: number; kind: "pre" | "post"; rows: PairStudent[]; gridA: ChapterStudent[]; gridB: ChapterStudent[] }): Promise<ArrayBuffer> {
+  const { grade, setNo, kind, rows, gridA, gridB } = opts;
   const wb = new ExcelJS.Workbook();
   wb.creator = "READING POWER";
+  buildPairSummary(wb, { grade, setNo, kind, rows });
+  buildRegularSheet(wb, { grade, setNo, chapter: kind === "pre" ? PRE_READ : POST_READ, students: gridA });
+  buildRegularSheet(wb, { grade, setNo, chapter: kind === "pre" ? PRE_RW : POST_RW, students: gridB });
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+/** ทั้งชุด (รายห้อง): สรุป Pre/Post รวม + ชีตรายบท */
+export async function setWorkbookBuffer(opts: { grade: number; setNo: number; perChapter: { chapter: number; students: ChapterStudent[] }[]; prePair?: PairStudent[]; postPair?: PairStudent[] }): Promise<ArrayBuffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "READING POWER";
+  if (opts.prePair && opts.prePair.some((r) => r.a != null || r.b != null)) buildPairSummary(wb, { grade: opts.grade, setNo: opts.setNo, kind: "pre", rows: opts.prePair });
   for (const pc of opts.perChapter) {
     const args = { grade: opts.grade, setNo: opts.setNo, chapter: pc.chapter, students: pc.students };
     if (slotKind(pc.chapter) === "sentence") buildTestSheet(wb, args);
     else buildRegularSheet(wb, args);
   }
+  if (opts.postPair && opts.postPair.some((r) => r.a != null || r.b != null)) buildPairSummary(wb, { grade: opts.grade, setNo: opts.setNo, kind: "post", rows: opts.postPair });
   if (wb.worksheets.length === 0) wb.addWorksheet("ว่าง").getCell(1, 1).value = "ยังไม่มีคะแนนในชุดนี้";
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }

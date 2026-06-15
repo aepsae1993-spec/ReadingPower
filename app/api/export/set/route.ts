@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient, isConfigured } from "@/lib/supabase/server";
-import { setWorkbookBuffer, ChapterStudent } from "@/lib/excel";
+import { setWorkbookBuffer, ChapterStudent, PairStudent } from "@/lib/excel";
 import { PRE_READ, PRE_RW, POST_READ, POST_RW, ALL_CHAPTERS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
     return { chapter, students: rows };
   });
 
-  const buf = await setWorkbookBuffer({ grade, setNo, perChapter });
+  const pairRows = (a: number, b: number): PairStudent[] => stuList.map((st: any) => ({ no: st.no ?? null, name: st.name, a: byChapter.get(a)?.get(st.id)?.score ?? null, b: byChapter.get(b)?.get(st.id)?.score ?? null }));
+  const prePair = pairRows(PRE_READ, PRE_RW);
+  const postPair = pairRows(POST_READ, POST_RW);
+
+  const buf = await setWorkbookBuffer({ grade, setNo, perChapter, prePair, postPair });
   const filename = `คะแนนทั้งชุด-ป${grade}-ชุด${setNo}.xlsx`;
   return new Response(buf, {
     headers: {
