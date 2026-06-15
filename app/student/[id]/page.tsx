@@ -6,6 +6,7 @@ import { gradeName, tier } from "@/lib/design";
 import { MAX_SET, TEST_FULL } from "@/lib/types";
 import { SetTrack, StatCard, LevelBadge } from "@/components/ui";
 import { computeBadges, earnedCount } from "@/lib/badges";
+import ParentLinkButton from "@/components/ParentLinkButton";
 import { ArrowLeft, Download, Compass } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -34,11 +35,14 @@ export default async function StudentPage({ params, searchParams }: { params: { 
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-2">
         <Link href={`/class/${s.grade}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-indigo-300"><ArrowLeft size={16} /> ชั้น {gradeName(s.grade)}</Link>
-        {isConfigured() && (
-          <a href={`/api/export/student?id=${s.id}`} className="flex items-center gap-2 rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25">
-            <Download size={16} /> ดาวน์โหลด Excel
-          </a>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <ParentLinkButton id={s.id} />
+          {isConfigured() && (
+            <a href={`/api/export/student?id=${s.id}`} className="flex items-center gap-2 rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25">
+              <Download size={16} /> ดาวน์โหลด Excel
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Profile hero */}

@@ -5,6 +5,7 @@ import Image from "next/image";
 import NextTopLoader from "nextjs-toploader";
 import { Trophy, School, Activity, Microscope } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
+import NavGate from "@/components/NavGate";
 import "./globals.css";
 
 const LOGO_URL = "https://bwnjcxewplhtpvvnclfc.supabase.co/storage/v1/object/public/logo/school-logo.png";
@@ -32,21 +33,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="text-xs text-slate-300">โรงเรียนวัดบางขุด (อุ่นพิทยาคาร)</div>
               </div>
             </Link>
-            <nav className="flex items-center gap-1 text-sm font-semibold">
-              <Link href="/" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
-                <Trophy size={16} /> <span className="hidden sm:inline">โรงเรียน</span>
-              </Link>
-              <Link href="/summary" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
-                <Activity size={16} /> <span className="hidden sm:inline">สรุป</span>
-              </Link>
-              <Link href="/class/1" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
-                <School size={16} /> <span className="hidden sm:inline">ห้องเรียน</span>
-              </Link>
-              <Link href="/analysis" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
-                <Microscope size={16} /> <span className="hidden sm:inline">วิเคราะห์</span>
-              </Link>
-              <AuthNav />
-            </nav>
+            <NavGate>
+              <nav className="flex items-center gap-1 text-sm font-semibold">
+                <Link href="/" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
+                  <Trophy size={16} /> <span className="hidden sm:inline">โรงเรียน</span>
+                </Link>
+                <Link href="/summary" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
+                  <Activity size={16} /> <span className="hidden sm:inline">สรุป</span>
+                </Link>
+                <Link href="/class/1" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
+                  <School size={16} /> <span className="hidden sm:inline">ห้องเรียน</span>
+                </Link>
+                <Link href="/analysis" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-slate-300 hover:bg-white/10">
+                  <Microscope size={16} /> <span className="hidden sm:inline">วิเคราะห์</span>
+                </Link>
+                <AuthNav />
+              </nav>
+            </NavGate>
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>

@@ -3,6 +3,7 @@ import { getAllStudents } from "@/lib/data.server";
 import { gradeName } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
 import { ProgressBar, PositionPill, RankMedal, RankEmblem, LevelBadge } from "@/components/ui";
+import { computeBadges, earnedCount } from "@/lib/badges";
 import { Crown, Users, Flame, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -69,13 +70,17 @@ export default async function SchoolPage() {
         <div className="grid grid-cols-3 gap-3">
           {podiumOrder.map((r) => {
             const place = r.rank!;
+            const medals = earnedCount(computeBadges(r));
             return (
               <Link key={r.id} href={`/student/${r.id}`} className={`card group relative overflow-hidden p-5 text-center transition hover:-translate-y-1 ${place === 1 ? "sm:-mt-5 card-glow" : ""}`}>
                 {place === 1 && <span className="absolute right-[-34px] top-[18px] w-32 rotate-45 bg-gradient-to-r from-fuchsia-500 to-indigo-500 py-1 text-center text-[10px] font-extrabold tracking-widest text-white shadow">TOP</span>}
                 <RankEmblem rank={place} />
                 <div className="mt-1 truncate text-lg font-bold text-ink">{r.name}</div>
                 <div className="text-sm text-slate-300">{gradeName(r.grade)}</div>
-                <div className="mt-2 flex justify-center"><LevelBadge p={r.progress} size="md" /></div>
+                <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                  <LevelBadge p={r.progress} size="md" />
+                  {medals > 0 && <span className="chip bg-amber-500/15 px-2.5 py-1 text-amber-300 ring-1 ring-amber-500/30">🏅 {medals} เหรียญ</span>}
+                </div>
                 {r.progress.started && !r.progress.isMaxed && <div className="mt-1.5 text-xs text-slate-300">บท {r.progress.currentChapter}/50</div>}
               </Link>
             );

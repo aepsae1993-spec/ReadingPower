@@ -22,9 +22,10 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
-  const isAuth = path.startsWith("/login") || path.startsWith("/auth");
+  // /report = หน้าสาธารณะสำหรับผู้ปกครอง (เปิดดูได้โดยไม่ต้องล็อกอิน)
+  const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/report");
 
-  if (!user && !isAuth) {
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
