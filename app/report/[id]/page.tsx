@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { getStudent } from "@/lib/data.server";
+import { getStudent, getStudentAttempts } from "@/lib/data.server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
-import { SetTrack, SetDetail, StatCard, LevelBadge } from "@/components/ui";
+import { SetTrack, SetDetail, StatCard, LevelBadge, RetakeHistory } from "@/components/ui";
 import { computeBadges } from "@/lib/badges";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,7 @@ export default async function ReportPage({ params, searchParams }: { params: { i
   const scorePct = scoreMax ? Math.round((scoreSum / scoreMax) * 100) : 0;
   const progressPct = p.grandTotal ? Math.round((p.totalPassed / p.grandTotal) * 100) : 0;
   const earned = computeBadges(s).filter((b) => b.earned);
+  const retakes = await getStudentAttempts(s.id);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -64,6 +65,8 @@ export default async function ReportPage({ params, searchParams }: { params: { i
         <h2 className="mb-3 text-xl font-extrabold text-ink">คะแนนรายบท — ชุด {selectedSet}</h2>
         <SetDetail setNo={selectedSet} cur={cur} />
       </section>
+
+      <RetakeHistory retakes={retakes} />
 
       {earned.length > 0 && (
         <section className="card p-4 sm:p-5">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { tier } from "@/lib/design";
 import { Progress, SetProgress } from "@/lib/progression";
-import { TEST_FULL } from "@/lib/types";
+import { TEST_FULL, chapterShort } from "@/lib/types";
 import { Crown } from "lucide-react";
 
 /** ช่อมะกอกประดับเหรียญ */
@@ -127,6 +127,31 @@ export function SetTrack({ p, hrefFor, selected }: { p: Progress; hrefFor?: (set
           : <div key={sp.setNo} className={cls}>{inner}</div>;
       })}
     </div>
+  );
+}
+
+/** ประวัติการสอบซ้ำ (บทที่สอบ ≥2 ครั้ง) — เก็บคะแนนดีสุด */
+export function RetakeHistory({ retakes }: { retakes: { setNo: number; chapter: number; total: number; scores: number[] }[] }) {
+  if (!retakes.length) return null;
+  return (
+    <section className="card p-4 sm:p-5">
+      <h2 className="mb-3 text-xl font-extrabold text-ink">ประวัติการสอบซ้ำ <span className="text-sm font-semibold text-slate-400">(เก็บคะแนนดีสุด)</span></h2>
+      <div className="space-y-1.5">
+        {retakes.map((r) => {
+          const best = Math.max(...r.scores);
+          const up = r.scores[r.scores.length - 1] >= r.scores[0];
+          return (
+            <div key={`${r.setNo}-${r.chapter}`} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-ink">ชุด {r.setNo} · {chapterShort(r.chapter)}</div>
+                <div className="text-[11px] text-slate-400">{r.scores.length} ครั้ง · {r.scores.join(" → ")} <span className="text-slate-500">(เต็ม {r.total})</span></div>
+              </div>
+              <span className={`chip shrink-0 ring-1 ${up ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30" : "bg-white/10 text-slate-300 ring-white/10"}`}>{up ? "↑ " : ""}ดีสุด {best}/{r.total}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

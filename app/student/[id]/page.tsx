@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getStudent } from "@/lib/data.server";
+import { getStudent, getStudentAttempts } from "@/lib/data.server";
 import { isConfigured } from "@/lib/supabase/server";
 import { gradeName, tier } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
-import { SetTrack, SetDetail, StatCard, LevelBadge } from "@/components/ui";
+import { SetTrack, SetDetail, StatCard, LevelBadge, RetakeHistory } from "@/components/ui";
 import { computeBadges, earnedCount } from "@/lib/badges";
 import ParentLinkButton from "@/components/ParentLinkButton";
 import { ArrowLeft, Download, Compass } from "lucide-react";
@@ -30,6 +30,7 @@ export default async function StudentPage({ params, searchParams }: { params: { 
   const scorePct = scoreMax ? Math.round((scoreSum / scoreMax) * 100) : 0;
 
   const badges = computeBadges(s);
+  const retakes = await getStudentAttempts(s.id);
 
   return (
     <div className="space-y-6">
@@ -94,6 +95,8 @@ export default async function StudentPage({ params, searchParams }: { params: { 
         </div>
         <SetDetail setNo={selectedSet} cur={cur} />
       </section>
+
+      <RetakeHistory retakes={retakes} />
 
       {/* เหรียญ & ความสำเร็จ */}
       <section className="card p-5">
