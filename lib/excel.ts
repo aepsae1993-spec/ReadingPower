@@ -142,6 +142,54 @@ export async function setWorkbookBuffer(opts: { grade: number; setNo: number; pe
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
 
+/** ประวัติการพัฒนา (สอบซ้ำ) ทั้งห้อง — เฉพาะบทที่สอบ ≥2 ครั้ง */
+export interface RetakeExportRow { no?: number | null; name: string; setNo: number; chapter: number; total: number; scores: number[] }
+export async function retakeWorkbookBuffer(opts: { grade: number; rows: RetakeExportRow[] }): Promise<ArrayBuffer> {
+  const { grade, rows } = opts;
+  const COLS = 8;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "READING POWER";
+  const ws = wb.addWorksheet(`ประวัติพัฒนา ป.${grade}`, { views: [{ state: "frozen", ySplit: 4 }] });
+  printSetup(ws, "landscape");
+  [5, 26, 6, 16, 6, 26, 8, 9].forEach((w, i) => (ws.getColumn(i + 1).width = w));
+
+  const top = titleBlock(ws, COLS, [
+    { text: "ประวัติการพัฒนา (สอบซ้ำ)", big: true },
+    { text: `ชั้นประถมศึกษาปีที่ ${grade} ปีการศึกษา ${thaiYear()}` },
+    { text: "เฉพาะบทที่สอบ ≥ 2 ครั้ง · คะแนนทางการ = ครั้งที่ดีที่สุด" },
+  ]);
+  const HR = top + 1;
+  ["ที่", "ชื่อ-สกุล", "ชุด", "รายการ", "ครั้ง", "คะแนนแต่ละครั้ง", "ดีสุด", "พัฒนา"].forEach((h, i) => {
+    const c = ws.getCell(HR, i + 1);
+    c.value = h; c.alignment = { horizontal: "center", vertical: "middle" }; c.font = { bold: true, name: FONT, size: 13 }; c.fill = fill(C.header); c.border = ALL_BORDERS;
+  });
+  ws.getRow(HR).height = 20;
+
+  if (rows.length === 0) {
+    const r = HR + 1;
+    ws.mergeCells(r, 1, r, COLS);
+    setCell(ws, r, 1, "ยังไม่มีการสอบซ้ำในห้องนี้", { center: true });
+    return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+  }
+
+  rows.forEach((row, i) => {
+    const r = HR + 1 + i;
+    const best = Math.max(...row.scores);
+    const gain = best - row.scores[0];
+    setCell(ws, r, 1, i + 1, { center: true, border: true });
+    setCell(ws, r, 2, row.name, { border: true });
+    setCell(ws, r, 3, row.setNo, { center: true, border: true });
+    setCell(ws, r, 4, chapterShort(row.chapter), { center: true, border: true });
+    setCell(ws, r, 5, row.scores.length, { center: true, border: true });
+    setCell(ws, r, 6, row.scores.join("  →  ") + `  (เต็ม ${row.total})`, { center: true, border: true });
+    setCell(ws, r, 7, `${best}/${row.total}`, { center: true, bold: true, fill: C.total, border: true });
+    setCell(ws, r, 8, gain > 0 ? `+${gain}` : `${gain}`, { center: true, bold: true, fill: gain > 0 ? C.easy : C.band, border: true });
+    ws.getRow(r).height = 18;
+  });
+
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
 function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }) {
   const N = REGULAR_ITEMS;
   const COLS = 2 + N + 2; // ที่ + ชื่อ + 20 ข้อ + รวม + ร้อยละ

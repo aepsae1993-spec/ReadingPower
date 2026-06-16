@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { getClassStudents } from "@/lib/data.server";
 import { gradeName } from "@/lib/design";
 import { MAX_SET } from "@/lib/types";
+import { isConfigured } from "@/lib/supabase/server";
 import { ProgressBar, PositionPill, RankMedal, StatCard, LevelBadge } from "@/components/ui";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, TrendingUp } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,13 @@ export default async function ClassPage({ params }: { params: { grade: string } 
           <StatCard label="ก้าวหน้าเฉลี่ย" value={`${avg}%`} accent="text-fuchsia-300" />
         </div>
       </section>
+
+      {isConfigured() && (
+        <a href={`/api/export/retakes?grade=${grade}`}
+          className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/15 px-4 py-2.5 text-sm font-bold text-amber-300 ring-1 ring-amber-500/30 transition hover:bg-amber-500/25">
+          <TrendingUp size={16} /> ดาวน์โหลดประวัติการพัฒนา (สอบซ้ำ) — Excel
+        </a>
+      )}
 
       <section className="card overflow-hidden">
         <div className="border-b border-white/10 px-5 py-4">
