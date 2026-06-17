@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import {
   REGULAR_ITEMS, REGULAR_PASS_RATIO, TEST_FULL, TEST_PASS,
   slotKind, itemLevel, chapterPassed, chapterName, chapterShort, chapterSlots, MAX_SET, CHAPTERS_PER_SET,
-  PRE_READ, PRE_RW, POST_READ, POST_RW,
+  PRE_READ, PRE_RW, POST_READ, POST_RW, isTestChapter, chapterFull,
 } from "./types";
 
 const FONT = "TH Sarabun New";
@@ -187,6 +187,69 @@ export async function retakeWorkbookBuffer(opts: { grade: number; rows: RetakeEx
     ws.getRow(r).height = 18;
   });
 
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+/** สรุปคะแนนรายบททั้งห้อง — จัดเป็นบล็อกละ 5 บท (รวม+ร้อยละ) · 10 บท/ชีต ให้พอดี A4 */
+export interface SetSummaryStudent { no?: number | null; name: string; scores: (number | null)[] } // scores[chapter-1] สำหรับบท 1..50
+export async function setSummaryWorkbookBuffer(opts: { grade: number; setNo: number; students: SetSummaryStudent[] }): Promise<ArrayBuffer> {
+  const { grade, setNo, students } = opts;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "READING POWER";
+  const PER = 10; // บทต่อชีต (2 บล็อกๆละ 5) → พอดี A4 แนวนอน
+
+  for (let start = 1; start <= CHAPTERS_PER_SET; start += PER) {
+    const end = Math.min(start + PER - 1, CHAPTERS_PER_SET);
+    const chs: number[] = []; for (let c = start; c <= end; c++) chs.push(c);
+    const blocks: number[][] = []; for (let i = 0; i < chs.length; i += 5) blocks.push(chs.slice(i, i + 5));
+    const COLS = 2 + blocks.reduce((a, b) => a + b.length + 2, 0);
+
+    const ws = wb.addWorksheet(`บท ${start}-${end}`, { views: [{ state: "frozen", xSplit: 2, ySplit: 5 }] });
+    printSetup(ws, "landscape");
+    ws.getColumn(1).width = 4; ws.getColumn(2).width = 24;
+    { let col = 3; for (const b of blocks) { for (const _ of b) ws.getColumn(col++).width = 5; ws.getColumn(col++).width = 7; ws.getColumn(col++).width = 8; } }
+
+    const top = titleBlock(ws, COLS, [
+      { text: "สรุปคะแนนรายบท", big: true },
+      { text: `ชั้นประถมศึกษาปีที่ ${grade} ปีการศึกษา ${thaiYear()}` },
+      { text: `ชุดที่ ${setNo} · บทที่ ${start}-${end} · ${students.length} คน` },
+    ]);
+    const HR = top + 1;
+    const headerCell = (r: number, c: number, t: string) => { const cell = ws.getCell(r, c); cell.value = t; cell.alignment = { horizontal: "center", vertical: "middle" }; cell.font = { bold: true, name: FONT, size: 12 }; cell.fill = fill(C.header); cell.border = ALL_BORDERS; };
+
+    ws.mergeCells(HR, 1, HR + 1, 1); ws.mergeCells(HR, 2, HR + 1, 2);
+    headerCell(HR, 1, "ที่"); headerCell(HR, 2, "ชื่อ-สกุล");
+    { let col = 3; for (const b of blocks) {
+      ws.mergeCells(HR, col, HR, col + b.length + 1);
+      headerCell(HR, col, `บทที่ ${b[0]}-${b[b.length - 1]}`);
+      for (const c of b) headerCell(HR + 1, col++, String(c));
+      headerCell(HR + 1, col++, "รวม");
+      headerCell(HR + 1, col++, "ร้อยละ");
+    } }
+    ws.getRow(HR).height = 18; ws.getRow(HR + 1).height = 18;
+
+    students.forEach((s, si) => {
+      const r = HR + 2 + si;
+      setCell(ws, r, 1, si + 1, { center: true, border: true });
+      setCell(ws, r, 2, s.name, { border: true });
+      let col = 3;
+      for (const b of blocks) {
+        let sum = 0, max = 0;
+        for (const c of b) {
+          const v = s.scores[c - 1];
+          const cell = ws.getCell(r, col++);
+          cell.value = v == null ? "–" : v;
+          cell.alignment = { horizontal: "center" }; cell.font = { name: FONT, size: 12 }; cell.border = ALL_BORDERS;
+          if (isTestChapter(c)) cell.fill = fill(C.total); // บทแต่งประโยค (เต็ม 15)
+          if (v != null) sum += v;
+          max += chapterFull(c);
+        }
+        setCell(ws, r, col++, sum, { center: true, bold: true, fill: C.easy, border: true });
+        const pc = ws.getCell(r, col++); pc.value = max ? sum / max : 0; pc.numFmt = "0%"; pc.alignment = { horizontal: "center" }; pc.font = { name: FONT, size: 12, bold: true }; pc.fill = fill(C.total); pc.border = ALL_BORDERS;
+      }
+      ws.getRow(r).height = 17;
+    });
+  }
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
 

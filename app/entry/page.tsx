@@ -45,6 +45,10 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
               className="flex items-center gap-2 rounded-xl bg-indigo-500/15 px-4 py-2 text-sm font-bold text-indigo-300 ring-1 ring-indigo-500/30 transition hover:bg-indigo-500/25">
               <Download size={16} /> Excel (ทั้งชุด · รวม Pre/Post)
             </a>
+            <a href={`/api/export/setsummary?grade=${grade}&set=${setNo}`}
+              className="flex items-center gap-2 rounded-xl bg-amber-500/15 px-4 py-2 text-sm font-bold text-amber-300 ring-1 ring-amber-500/30 transition hover:bg-amber-500/25">
+              <Download size={16} /> Excel (สรุปรายห้อง · บท×5)
+            </a>
           </div>
         </div>
         <div className="mt-3 text-sm text-slate-300">
