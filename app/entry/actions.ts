@@ -35,15 +35,13 @@ async function recordAttempts(sb: ReturnType<typeof createClient>, userId: strin
   return { ok: true as const, count: entries.length };
 }
 
-/** บทปกติ: กดถูก/ผิด 20 ข้อ */
-export async function saveChecklist(input: { setNo: number; chapter: number; rows: { studentId: string; items: number[]; existed?: boolean }[] }) {
+/** บทปกติ: กดถูก/ผิด 20 ข้อ (rows = เฉพาะคนที่แก้ไข ส่งมาจากหน้ากรอกแล้ว) */
+export async function saveChecklist(input: { setNo: number; chapter: number; rows: { studentId: string; items: number[] }[] }) {
   const sb = createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, error: "ยังไม่ได้เข้าสู่ระบบ" };
 
-  const entries: Entry[] = input.rows
-    .filter((r) => r.items.some((v) => v) || r.existed)
-    .map((r) => ({ studentId: r.studentId, score: r.items.reduce((a, b) => a + (b ? 1 : 0), 0), items: r.items }));
+  const entries: Entry[] = input.rows.map((r) => ({ studentId: r.studentId, score: r.items.reduce((a, b) => a + (b ? 1 : 0), 0), items: r.items }));
 
   const res = await recordAttempts(sb, user.id, input.setNo, input.chapter, REGULAR_ITEMS, entries);
   if (!res.ok) return res;

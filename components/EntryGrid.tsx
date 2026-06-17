@@ -13,7 +13,7 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
   initial: Record<string, number[] | null>;
 }) {
   const [rows, setRows] = useState(() =>
-    students.map((s) => ({ ...s, items: normalize(initial[s.id]), existed: initial[s.id] != null }))
+    students.map((s) => { const init = normalize(initial[s.id]); return { ...s, items: init.slice(), init, existed: initial[s.id] != null }; })
   );
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -26,9 +26,12 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
 
   const save = () => {
     setMsg(null);
+    // บันทึกเฉพาะคนที่แก้ไขจริง (ค่าต่างจากที่โหลดมา) — กันบันทึกซ้ำคนที่ไม่ได้แตะ
+    const changed = rows.filter((r) => r.items.some((v, i) => v !== r.init[i]));
+    if (changed.length === 0) { setMsg("ยังไม่มีการแก้ไข"); return; }
     start(async () => {
-      const res = await saveChecklist({ setNo, chapter, rows: rows.map((r) => ({ studentId: r.id, items: r.items, existed: r.existed })) });
-      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+      const res = await saveChecklist({ setNo, chapter, rows: changed.map((r) => ({ studentId: r.id, items: r.items })) });
+      if (res.ok) { setSaved(true); setRows((rs) => rs.map((r) => ({ ...r, init: r.items.slice(), existed: r.existed || r.items.some((v) => v) }))); setTimeout(() => setSaved(false), 2000); }
       else setMsg(res.error ?? "บันทึกไม่สำเร็จ");
     });
   };

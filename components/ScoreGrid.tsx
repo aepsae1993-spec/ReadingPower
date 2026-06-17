@@ -13,7 +13,7 @@ export default function ScoreGrid({ setNo, chapter, students, initial }: {
   initial: Record<string, Cell>;
 }) {
   const [rows, setRows] = useState(() =>
-    students.map((s) => ({ ...s, score: initial[s.id] ?? null }))
+    students.map((s) => ({ ...s, score: initial[s.id] ?? null, init: initial[s.id] ?? null }))
   );
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -24,9 +24,12 @@ export default function ScoreGrid({ setNo, chapter, students, initial }: {
 
   const save = () => {
     setMsg(null);
+    // บันทึกเฉพาะคนที่แก้ไขจริง (ค่าต่างจากที่โหลดมา)
+    const changed = rows.filter((r) => r.score != null && r.score !== r.init);
+    if (changed.length === 0) { setMsg("ยังไม่มีการแก้ไข"); return; }
     start(async () => {
-      const res = await saveScore({ setNo, chapter, rows: rows.map((r) => ({ studentId: r.id, score: r.score })) });
-      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+      const res = await saveScore({ setNo, chapter, rows: changed.map((r) => ({ studentId: r.id, score: r.score })) });
+      if (res.ok) { setSaved(true); setRows((rs) => rs.map((r) => ({ ...r, init: r.score }))); setTimeout(() => setSaved(false), 2000); }
       else setMsg(res.error ?? "บันทึกไม่สำเร็จ");
     });
   };
