@@ -3,6 +3,7 @@ import { isValidChapterCode, slotKind, chapterName, TEST_FULL, TEST_PASS } from 
 import EntrySelector from "@/components/EntrySelector";
 import EntryGrid from "@/components/EntryGrid";
 import ScoreGrid from "@/components/ScoreGrid";
+import DeleteChapterButton from "@/components/DeleteChapterButton";
 import { gradeName } from "@/lib/design";
 import { Download } from "lucide-react";
 
@@ -51,9 +52,12 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
             </a>
           </div>
         </div>
-        <div className="mt-3 text-sm text-slate-300">
-          กำลังกรอก: <b className="text-indigo-300">{gradeName(grade)}</b> · ชุด {setNo} · {chapterName(chapter)}
-          {sentence ? <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-300 ring-1 ring-amber-500/30">แต่งประโยค</span> : null}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-slate-300">
+            กำลังกรอก: <b className="text-indigo-300">{gradeName(grade)}</b> · ชุด {setNo} · {chapterName(chapter)}
+            {sentence ? <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-300 ring-1 ring-amber-500/30">แต่งประโยค</span> : null}
+          </div>
+          <DeleteChapterButton grade={grade} setNo={setNo} chapter={chapter} label={`${gradeName(grade)} · ชุด ${setNo} · ${chapterName(chapter)}`} />
         </div>
       </div>
 

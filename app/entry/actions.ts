@@ -49,6 +49,24 @@ export async function saveChecklist(input: { setNo: number; chapter: number; row
   return { ok: true, count: res.count };
 }
 
+/** ลบคะแนน "บทนี้" ของทั้งห้อง (คะแนนจริง + ประวัติ) — ลบถาวร ไม่เหลือร่องรอย */
+export async function deleteChapter(input: { grade: number; setNo: number; chapter: number }) {
+  const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "ยังไม่ได้เข้าสู่ระบบ" };
+
+  const { data: studs } = await sb.from("students").select("id").eq("active", true).eq("grade", input.grade);
+  const ids = (studs ?? []).map((s: any) => s.id);
+  if (ids.length === 0) return { ok: true, count: 0 };
+
+  // ลบประวัติ (best-effort) ก่อน แล้วลบคะแนนจริง
+  await sb.from("chapter_attempts").delete().eq("set_no", input.setNo).eq("chapter", input.chapter).in("student_id", ids);
+  const { error, count } = await sb.from("chapter_scores").delete({ count: "exact" }).eq("set_no", input.setNo).eq("chapter", input.chapter).in("student_id", ids);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, count: count ?? 0 };
+}
+
 /** บททดสอบ/แต่งประโยค/Pre-Post: กรอกคะแนนเป็นตัวเลข */
 export async function saveScore(input: { setNo: number; chapter: number; rows: { studentId: string; score: number | null }[] }) {
   const sb = createClient();
