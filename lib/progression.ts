@@ -31,6 +31,7 @@ export interface Progress {
   grandTotal: number;     // MAX_SET * CHAPTERS_PER_SET
   rankValue: number;
   percent: number;        // % บทที่ผ่านในชุดปัจจุบัน
+  scorePct: number;       // คะแนนเฉลี่ยที่ทำได้ (ร้อยละ) — ใช้จัดอันดับ
   started: boolean;
 }
 
@@ -82,12 +83,19 @@ export function computeProgress(results: ChapterResult[]): Progress {
   const grandTotal = MAX_SET * CHAPTERS_PER_SET;
   const passedInCurrentSet = bySet[currentSet - 1].passed;
 
-  // จัดอันดับ: ชุดสูงกว่าเก่งกว่า > ผ่านมากกว่า > บทไกลกว่า (คนยังไม่เริ่ม = ท้ายสุด)
-  const rankValue = started ? (currentSet * 1_000_000 + totalPassed * 1_000 + currentChapter) : 0;
+  // คะแนนเฉลี่ยที่ทำได้ (ร้อยละ) = คะแนนที่ได้ ÷ คะแนนเต็มของบทที่ทำ (บท 1-50)
+  const done = bySet.flatMap((sp) => sp.cells).filter((c) => c.score != null);
+  const scoreSum = done.reduce((a, c) => a + (c.score ?? 0), 0);
+  const scoreMax = done.reduce((a, c) => a + c.total, 0);
+  const rawPct = scoreMax > 0 ? (scoreSum / scoreMax) * 100 : 0;
+  const scorePct = Math.round(rawPct);
+
+  // จัดอันดับ: คะแนนเฉลี่ยร้อยละมากกว่า = อันดับสูงกว่า · เท่ากันดูคะแนนรวมที่ทำได้ (คนยังไม่เริ่ม = ท้ายสุด)
+  const rankValue = started ? Math.round(rawPct * 100) * 100_000 + scoreSum : 0;
 
   return {
     bySet, completedSets, currentSet, currentChapter, isMaxed,
-    totalPassed, grandTotal, rankValue, started,
+    totalPassed, grandTotal, rankValue, started, scorePct,
     percent: started ? Math.round((passedInCurrentSet / CHAPTERS_PER_SET) * 100) : 0,
   };
 }

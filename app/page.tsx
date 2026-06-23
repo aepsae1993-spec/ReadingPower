@@ -13,7 +13,7 @@ export default async function SchoolPage() {
   const top = rows.slice(0, 3);
   const startedSets = rows.filter((r) => r.progress.started).map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet));
   const highestSet = startedSets.length ? Math.max(...startedSets) : 0;
-  const avgPercent = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / rows.length);
+  const avgPercent = rows.length ? Math.round(rows.reduce((a, r) => a + r.progress.scorePct, 0) / rows.length) : 0;
 
   // คนเก่งสุดของชั้น = ไปถึงชุดสูงสุด, ชุดเท่ากันดูบทไกลกว่า, บทเท่ากันดูจำนวนบทที่ผ่าน
   const setReached = (p: (typeof rows)[number]["progress"]) => (p.isMaxed ? MAX_SET : p.started ? p.currentSet : 0);
@@ -34,7 +34,7 @@ export default async function SchoolPage() {
   const byGrade = Array.from({ length: 6 }, (_, i) => i + 1).map((g) => {
     const list = rows.filter((r) => r.grade === g);
     const best = list.reduce<(typeof rows)[number] | undefined>((b, r) => (!b || isAhead(r, b) ? r : b), undefined);
-    return { g, count: list.length, best, avg: Math.round(list.reduce((a, r) => a + r.progress.percent, 0) / (list.length || 1)) };
+    return { g, count: list.length, best, avg: Math.round(list.reduce((a, r) => a + r.progress.scorePct, 0) / (list.length || 1)) };
   });
 
   const podiumOrder = [top[1], top[0], top[2]].filter(Boolean);
@@ -81,7 +81,7 @@ export default async function SchoolPage() {
                   <LevelBadge p={r.progress} size="md" />
                   {medals > 0 && <span className="chip bg-amber-500/15 px-2.5 py-1 text-amber-300 ring-1 ring-amber-500/30">🏅 {medals} เหรียญ</span>}
                 </div>
-                {r.progress.started && !r.progress.isMaxed && <div className="mt-1.5 text-xs text-slate-300">บท {r.progress.currentChapter}/50</div>}
+                {r.progress.started && <div className="mt-1.5 text-xs text-slate-300">เฉลี่ย {r.progress.scorePct}%{!r.progress.isMaxed ? ` · บท ${r.progress.currentChapter}/50` : ""}</div>}
               </Link>
             );
           })}
@@ -112,7 +112,7 @@ export default async function SchoolPage() {
       <section className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-3.5">
           <h2 className="text-xl font-extrabold text-ink">อันดับรวมทั้งโรงเรียน</h2>
-          <span className="text-xs text-slate-400">เรียงตามความก้าวหน้า</span>
+          <span className="text-xs text-slate-400">เรียงตามคะแนนเฉลี่ย (ร้อยละ)</span>
         </div>
         <div className="divide-y divide-white/5">
           {rows.slice(0, 15).map((r) => (
@@ -128,8 +128,8 @@ export default async function SchoolPage() {
               <div className="hidden sm:block"><PositionPill p={r.progress} /></div>
               <LevelBadge p={r.progress} name={false} size="sm" />
               <div className="w-28 shrink-0">
-                <ProgressBar value={r.progress.totalPassed} max={r.progress.grandTotal} />
-                <div className="mt-1 text-right text-[11px] font-medium text-slate-300">{r.progress.percent}%</div>
+                <ProgressBar value={r.progress.scorePct} max={100} />
+                <div className="mt-1 text-right text-[11px] font-medium text-slate-300">เฉลี่ย {r.progress.scorePct}%</div>
               </div>
             </Link>
           ))}

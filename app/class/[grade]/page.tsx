@@ -13,7 +13,7 @@ export default async function ClassPage({ params }: { params: { grade: string } 
   const grade = Number(params.grade);
   if (!(grade >= 1 && grade <= 6)) notFound();
   const rows = await getClassStudents(grade);
-  const avg = Math.round(rows.reduce((a, r) => a + r.progress.percent, 0) / (rows.length || 1));
+  const avg = Math.round(rows.reduce((a, r) => a + r.progress.scorePct, 0) / (rows.length || 1));
   const startedSets = rows.filter((r) => r.progress.started).map((r) => (r.progress.isMaxed ? MAX_SET : r.progress.currentSet));
   const topSet = startedSets.length ? Math.max(...startedSets) : 0;
 
@@ -66,8 +66,8 @@ export default async function ClassPage({ params }: { params: { grade: string } 
               <div className="hidden sm:block"><PositionPill p={r.progress} /></div>
               <LevelBadge p={r.progress} name={false} size="sm" />
               <div className="w-28 shrink-0">
-                <ProgressBar value={r.progress.totalPassed} max={r.progress.grandTotal} />
-                <div className="mt-1 text-right text-[11px] font-medium text-slate-300">{r.progress.percent}%</div>
+                <ProgressBar value={r.progress.scorePct} max={100} />
+                <div className="mt-1 text-right text-[11px] font-medium text-slate-300">เฉลี่ย {r.progress.scorePct}%</div>
               </div>
             </Link>
           ))}

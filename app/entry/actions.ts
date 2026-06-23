@@ -53,6 +53,20 @@ export async function saveChecklist(input: { setNo: number; chapter: number; row
   return { ok: true, count: res.count };
 }
 
+/** บันทึกคำประจำข้อ (โจทย์รายข้อ) ต่อบท — คืน error จริงถ้ายังไม่ได้สร้างตาราง chapter_words */
+export async function saveChapterWords(input: { setNo: number; chapter: number; words: string[] }) {
+  const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "ยังไม่ได้เข้าสู่ระบบ" };
+  const { error } = await sb.from("chapter_words").upsert(
+    { ...ROW_BASE, set_no: input.setNo, chapter: input.chapter, words: input.words, updated_by: user.id, updated_at: new Date().toISOString() },
+    { onConflict: "set_no,stage,chapter" }
+  );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 /** ลบคะแนน "บทนี้" ของทั้งห้อง (คะแนนจริง + ประวัติ) — ลบถาวร ไม่เหลือร่องรอย */
 export async function deleteChapter(input: { grade: number; setNo: number; chapter: number }) {
   const sb = createClient();

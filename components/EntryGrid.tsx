@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { saveChecklist } from "@/app/entry/actions";
+import { saveChecklist, saveChapterWords } from "@/app/entry/actions";
 import { REGULAR_ITEMS, REGULAR_PASS_RATIO, itemLevel } from "@/lib/types";
 import { Save, Check, Loader2, Type, ChevronDown } from "lucide-react";
 import SuccessOverlay from "@/components/SuccessOverlay";
@@ -22,6 +22,17 @@ export default function EntryGrid({ setNo, chapter, students, initial, initialWo
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [wPending, wStart] = useTransition();
+  const [wMsg, setWMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const saveWords = () => {
+    setWMsg(null);
+    wStart(async () => {
+      const res = await saveChapterWords({ setNo, chapter, words });
+      if (res.ok) { setInitWords(words.slice()); setWMsg({ ok: true, text: "บันทึกคำแล้ว" }); }
+      else setWMsg({ ok: false, text: res.error ?? "บันทึกคำไม่สำเร็จ" });
+    });
+  };
 
   const toggle = (si: number, ci: number) =>
     setRows((rs) => rs.map((r, i) => i === si ? { ...r, items: r.items.map((v, j) => (j === ci ? (v ? 0 : 1) : v)) } : r));
@@ -67,14 +78,23 @@ export default function EntryGrid({ setNo, chapter, students, initial, initialWo
           <ChevronDown size={18} className={`transition ${showWords ? "rotate-180" : ""}`} />
         </button>
         {showWords && (
-          <div className="grid grid-cols-2 gap-2 border-t border-white/10 p-4 sm:grid-cols-3 lg:grid-cols-5">
-            {words.map((w, i) => (
-              <label key={i} className="flex items-center gap-1.5 text-xs">
-                <span className="w-9 shrink-0 text-right font-semibold text-slate-400">ข้อ {i + 1}</span>
-                <input value={w} onChange={(e) => setWords((ws) => ws.map((x, j) => (j === i ? e.target.value : x)))} placeholder="คำ"
-                  className="w-full rounded-md bg-slate-800 px-2 py-1 text-slate-100 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-indigo-400/40" />
-              </label>
-            ))}
+          <div className="border-t border-white/10 p-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {words.map((w, i) => (
+                <label key={i} className="flex items-center gap-1.5 text-xs">
+                  <span className="w-9 shrink-0 text-right font-semibold text-slate-400">ข้อ {i + 1}</span>
+                  <input value={w} onChange={(e) => setWords((ws) => ws.map((x, j) => (j === i ? e.target.value : x)))} placeholder="คำ"
+                    className="w-full rounded-md bg-slate-800 px-2 py-1 text-slate-100 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-indigo-400/40" />
+                </label>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <button onClick={saveWords} disabled={wPending}
+                className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-bold text-indigo-200 ring-1 ring-indigo-400/30 transition hover:bg-indigo-500/30 disabled:opacity-60">
+                {wPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} บันทึกคำ
+              </button>
+              {wMsg && <span className={`text-sm font-semibold ${wMsg.ok ? "text-emerald-300" : "text-rose-300"}`}>{wMsg.text}</span>}
+            </div>
           </div>
         )}
       </div>
