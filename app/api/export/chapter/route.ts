@@ -19,6 +19,14 @@ export async function GET(req: NextRequest) {
   const codeRaw = +(sp.get("chapter") ?? 1);
   const chapter = isValidChapterCode(codeRaw) ? codeRaw : 1;
 
+  // คำประจำข้อ (best-effort)
+  const fetchWords = async (chs: number[]) => {
+    const { data } = await sb.from("chapter_words").select("chapter,words").eq("set_no", setNo).in("chapter", chs);
+    const m = new Map<number, string[]>();
+    (data ?? []).forEach((w: any) => m.set(w.chapter, Array.isArray(w.words) ? w.words : []));
+    return m;
+  };
+
   // Pre/Post-Test → ออกไฟล์รวม 2 ใบ (อ่าน+ถูกผิด) + เฉลี่ยรายคน
   const isPre = chapter === PRE_READ || chapter === PRE_RW;
   const isPost = chapter === POST_READ || chapter === POST_RW;
@@ -42,7 +50,8 @@ export async function GET(req: NextRequest) {
       gridA.push({ no: st.no ?? null, name: st.name, items: Array.isArray(e?.a?.items) ? e!.a.items : null, score: e?.a?.score ?? null, total: e?.a?.total ?? null });
       gridB.push({ no: st.no ?? null, name: st.name, items: Array.isArray(e?.b?.items) ? e!.b.items : null, score: e?.b?.score ?? null, total: e?.b?.total ?? null });
     });
-    const buf = await testPairWorkbookBuffer({ grade, setNo, kind: isPre ? "pre" : "post", rows, gridA, gridB });
+    const wm = await fetchWords([codeA, codeB]);
+    const buf = await testPairWorkbookBuffer({ grade, setNo, kind: isPre ? "pre" : "post", rows, gridA, gridB, wordsA: wm.get(codeA), wordsB: wm.get(codeB) });
     return xlsx(buf, `คะแนน-ป${grade}-ชุด${setNo}-${isPre ? "PreTest" : "PostTest"}-รวม.xlsx`);
   }
 
@@ -59,7 +68,8 @@ export async function GET(req: NextRequest) {
     return { no: s.no ?? null, name: s.name, items: rec?.items ?? null, score: rec?.score ?? null, total: rec?.total ?? null };
   });
 
-  const buf = await chapterWorkbookBuffer({ grade, setNo, chapter, students: rows });
+  const wm = await fetchWords([chapter]);
+  const buf = await chapterWorkbookBuffer({ grade, setNo, chapter, students: rows, words: wm.get(chapter) });
   const kind = slotKind(chapter) === "sentence" ? "ประโยค" : "รายข้อ";
   const filename = `คะแนน-ป${grade}-ชุด${setNo}-${chapterShort(chapter)}-${kind}.xlsx`;
   return xlsx(buf, filename);

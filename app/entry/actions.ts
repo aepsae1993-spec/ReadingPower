@@ -35,14 +35,18 @@ async function recordAttempts(sb: ReturnType<typeof createClient>, userId: strin
   return { ok: true as const, count: entries.length };
 }
 
-/** บทปกติ: กดถูก/ผิด 20 ข้อ (rows = เฉพาะคนที่แก้ไข ส่งมาจากหน้ากรอกแล้ว) */
-export async function saveChecklist(input: { setNo: number; chapter: number; rows: { studentId: string; items: number[] }[] }) {
+/** บทปกติ: กดถูก/ผิด 20 ข้อ (rows = เฉพาะคนที่แก้ไข · words = คำประจำข้อ) */
+export async function saveChecklist(input: { setNo: number; chapter: number; rows: { studentId: string; items: number[] }[]; words?: string[] }) {
   const sb = createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, error: "ยังไม่ได้เข้าสู่ระบบ" };
 
-  const entries: Entry[] = input.rows.map((r) => ({ studentId: r.studentId, score: r.items.reduce((a, b) => a + (b ? 1 : 0), 0), items: r.items }));
+  // บันทึกคำประจำข้อ (best-effort — ถ้ายังไม่ได้สร้างตาราง chapter_words ก็ข้าม)
+  if (input.words) {
+    await sb.from("chapter_words").upsert({ ...ROW_BASE, set_no: input.setNo, chapter: input.chapter, words: input.words, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "set_no,stage,chapter" });
+  }
 
+  const entries: Entry[] = input.rows.map((r) => ({ studentId: r.studentId, score: r.items.reduce((a, b) => a + (b ? 1 : 0), 0), items: r.items }));
   const res = await recordAttempts(sb, user.id, input.setNo, input.chapter, REGULAR_ITEMS, entries);
   if (!res.ok) return res;
   revalidatePath("/", "layout");

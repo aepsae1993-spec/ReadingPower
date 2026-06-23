@@ -17,10 +17,13 @@ export async function GET(req: NextRequest) {
   const grade = clamp(+(sp.get("grade") ?? 1), 1, 6);
   const setNo = clamp(+(sp.get("set") ?? 1), 1, 6);
 
-  const [{ data: students }, { data: scores }] = await Promise.all([
+  const [{ data: students }, { data: scores }, { data: wordRows }] = await Promise.all([
     sb.from("students").select("id,name,no").eq("active", true).eq("grade", grade).order("no", { nullsFirst: false }),
     sb.from("chapter_scores").select("student_id,chapter,items,score,total").eq("set_no", setNo),
+    sb.from("chapter_words").select("chapter,words").eq("set_no", setNo),
   ]);
+  const wordsByChapter = new Map<number, string[]>();
+  (wordRows ?? []).forEach((w: any) => wordsByChapter.set(w.chapter, Array.isArray(w.words) ? w.words : []));
 
   // จัดกลุ่มคะแนนตามบท
   const byChapter = new Map<number, Map<string, { items: number[] | null; score: number | null; total: number | null }>>();
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest) {
       const rec = recs?.get(st.id);
       return { no: st.no ?? null, name: st.name, items: rec?.items ?? null, score: rec?.score ?? null, total: rec?.total ?? null };
     });
-    return { chapter, students: rows };
+    return { chapter, students: rows, words: wordsByChapter.get(chapter) };
   });
 
   const pairRows = (a: number, b: number): PairStudent[] => stuList.map((st: any) => ({ no: st.no ?? null, name: st.name, a: byChapter.get(a)?.get(st.id)?.score ?? null, b: byChapter.get(b)?.get(st.id)?.score ?? null }));

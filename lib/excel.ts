@@ -61,7 +61,7 @@ function normalizeItems(a: number[] | null | undefined, n: number): number[] {
 export interface ChapterStudent { no?: number | null; name: string; items: number[] | null; score: number | null; total: number | null; }
 
 /** ตารางรวมทั้งห้อง ต่อ 1 บท (กดถูก/ผิด 20 ข้อ + วิเคราะห์รายข้อ · บทแต่งประโยค = คะแนนเต็ม 15) */
-export async function chapterWorkbookBuffer(opts: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }): Promise<ArrayBuffer> {
+export async function chapterWorkbookBuffer(opts: { grade: number; setNo: number; chapter: number; students: ChapterStudent[]; words?: string[] }): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "READING POWER";
   if (slotKind(opts.chapter) === "sentence") buildTestSheet(wb, opts);
@@ -117,23 +117,23 @@ function buildPairSummary(wb: ExcelJS.Workbook, opts: { grade: number; setNo: nu
 }
 
 /** ส่งออก Pre/Post-Test: ชีตสรุปรวม+เฉลี่ย แล้วตามด้วยตารางรายข้อของ "อ่าน" และ "ถูกผิด" */
-export async function testPairWorkbookBuffer(opts: { grade: number; setNo: number; kind: "pre" | "post"; rows: PairStudent[]; gridA: ChapterStudent[]; gridB: ChapterStudent[] }): Promise<ArrayBuffer> {
-  const { grade, setNo, kind, rows, gridA, gridB } = opts;
+export async function testPairWorkbookBuffer(opts: { grade: number; setNo: number; kind: "pre" | "post"; rows: PairStudent[]; gridA: ChapterStudent[]; gridB: ChapterStudent[]; wordsA?: string[]; wordsB?: string[] }): Promise<ArrayBuffer> {
+  const { grade, setNo, kind, rows, gridA, gridB, wordsA, wordsB } = opts;
   const wb = new ExcelJS.Workbook();
   wb.creator = "READING POWER";
   buildPairSummary(wb, { grade, setNo, kind, rows });
-  buildRegularSheet(wb, { grade, setNo, chapter: kind === "pre" ? PRE_READ : POST_READ, students: gridA });
-  buildRegularSheet(wb, { grade, setNo, chapter: kind === "pre" ? PRE_RW : POST_RW, students: gridB });
+  buildRegularSheet(wb, { grade, setNo, chapter: kind === "pre" ? PRE_READ : POST_READ, students: gridA, words: wordsA });
+  buildRegularSheet(wb, { grade, setNo, chapter: kind === "pre" ? PRE_RW : POST_RW, students: gridB, words: wordsB });
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
 
 /** ทั้งชุด (รายห้อง): สรุป Pre/Post รวม + ชีตรายบท */
-export async function setWorkbookBuffer(opts: { grade: number; setNo: number; perChapter: { chapter: number; students: ChapterStudent[] }[]; prePair?: PairStudent[]; postPair?: PairStudent[] }): Promise<ArrayBuffer> {
+export async function setWorkbookBuffer(opts: { grade: number; setNo: number; perChapter: { chapter: number; students: ChapterStudent[]; words?: string[] }[]; prePair?: PairStudent[]; postPair?: PairStudent[] }): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "READING POWER";
   if (opts.prePair && opts.prePair.some((r) => r.a != null || r.b != null)) buildPairSummary(wb, { grade: opts.grade, setNo: opts.setNo, kind: "pre", rows: opts.prePair });
   for (const pc of opts.perChapter) {
-    const args = { grade: opts.grade, setNo: opts.setNo, chapter: pc.chapter, students: pc.students };
+    const args = { grade: opts.grade, setNo: opts.setNo, chapter: pc.chapter, students: pc.students, words: pc.words };
     if (slotKind(pc.chapter) === "sentence") buildTestSheet(wb, args);
     else buildRegularSheet(wb, args);
   }
@@ -253,8 +253,9 @@ export async function setSummaryWorkbookBuffer(opts: { grade: number; setNo: num
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 }
 
-function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[] }) {
+function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, students, words }: { grade: number; setNo: number; chapter: number; students: ChapterStudent[]; words?: string[] }) {
   const N = REGULAR_ITEMS;
+  const hasWords = !!words && words.some((w) => w && String(w).trim());
   const COLS = 2 + N + 2; // ที่ + ชื่อ + 20 ข้อ + รวม + ร้อยละ
   const ws = wb.addWorksheet(`ชุด${setNo} ${chapterShort(chapter)}`.slice(0, 31), { views: [{ state: "frozen", xSplit: 2, ySplit: 4 }] });
   printSetup(ws, "landscape");
@@ -272,16 +273,18 @@ function buildRegularSheet(wb: ExcelJS.Workbook, { grade, setNo, chapter, studen
   ]);
 
   const HR = top + 1;
-  const header = ["ที่", "ชื่อ-สกุล", ...Array.from({ length: N }, (_, i) => String(i + 1)), "รวมคะแนน", "ร้อยละ"];
-  header.forEach((h, idx) => {
-    const cell = ws.getCell(HR, idx + 1);
-    cell.value = h;
-    cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.font = { bold: true, name: FONT, size: 13 };
+  const setHead = (c: number, t: string, rotate = false) => {
+    const cell = ws.getCell(HR, c);
+    cell.value = t;
+    cell.alignment = rotate ? { textRotation: 90, vertical: "bottom", horizontal: "center" } : { horizontal: "center", vertical: "middle" };
+    cell.font = { bold: true, name: FONT, size: rotate ? 11 : 13 };
     cell.fill = fill(C.header);
     cell.border = ALL_BORDERS;
-  });
-  ws.getRow(HR).height = 20;
+  };
+  setHead(1, "ที่"); setHead(2, "ชื่อ-สกุล");
+  for (let i = 0; i < N; i++) setHead(3 + i, hasWords && words![i] ? `${i + 1} · ${words![i]}` : `${i + 1}`, hasWords);
+  setHead(3 + N, "รวมคะแนน"); setHead(4 + N, "ร้อยละ");
+  ws.getRow(HR).height = hasWords ? 80 : 20;
 
   const itemCorrect = Array(N).fill(0);
   let takers = 0, grandScore = 0;

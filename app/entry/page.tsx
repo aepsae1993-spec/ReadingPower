@@ -22,6 +22,9 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
   const sb = createClient();
   const { data: students } = await sb.from("students").select("id,name,no").eq("active", true).eq("grade", grade).order("no", { nullsFirst: false });
   const { data: existing } = await sb.from("chapter_scores").select("student_id,score,items").eq("set_no", setNo).eq("chapter", chapter);
+  // คำประจำข้อ (best-effort — ถ้ายังไม่มีตาราง chapter_words จะได้ค่าว่าง)
+  const { data: wordRow } = await sb.from("chapter_words").select("words").eq("set_no", setNo).eq("chapter", chapter).maybeSingle();
+  const words: string[] = Array.isArray(wordRow?.words) ? wordRow!.words : [];
 
   return (
     <div className="space-y-5">
@@ -64,7 +67,7 @@ export default async function EntryPage({ searchParams }: { searchParams: Record
       {sentence ? (
         <ScoreGrid key={`${grade}-${setNo}-${chapter}`} setNo={setNo} chapter={chapter} students={(students ?? []) as any} initial={buildScoreInitial(existing)} />
       ) : (
-        <EntryGrid key={`${grade}-${setNo}-${chapter}`} setNo={setNo} chapter={chapter} students={(students ?? []) as any} initial={buildItemsInitial(existing)} />
+        <EntryGrid key={`${grade}-${setNo}-${chapter}`} setNo={setNo} chapter={chapter} students={(students ?? []) as any} initial={buildItemsInitial(existing)} initialWords={words} />
       )}
     </div>
   );

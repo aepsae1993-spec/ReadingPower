@@ -2,19 +2,23 @@
 import { useState, useTransition } from "react";
 import { saveChecklist } from "@/app/entry/actions";
 import { REGULAR_ITEMS, REGULAR_PASS_RATIO, itemLevel } from "@/lib/types";
-import { Save, Check, Loader2 } from "lucide-react";
+import { Save, Check, Loader2, Type, ChevronDown } from "lucide-react";
 import SuccessOverlay from "@/components/SuccessOverlay";
 
 const N = REGULAR_ITEMS; // 20 ข้อ
 type Stu = { id: string; name: string };
 
-export default function EntryGrid({ setNo, chapter, students, initial }: {
+export default function EntryGrid({ setNo, chapter, students, initial, initialWords }: {
   setNo: number; chapter: number; students: Stu[];
   initial: Record<string, number[] | null>;
+  initialWords?: string[];
 }) {
   const [rows, setRows] = useState(() =>
     students.map((s) => { const init = normalize(initial[s.id]); return { ...s, items: init.slice(), init, existed: initial[s.id] != null }; })
   );
+  const [words, setWords] = useState<string[]>(() => normalizeWords(initialWords));
+  const [initWords, setInitWords] = useState<string[]>(() => normalizeWords(initialWords));
+  const [showWords, setShowWords] = useState(false);
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -26,20 +30,24 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
 
   const save = () => {
     setMsg(null);
-    // บันทึกเฉพาะคนที่แก้ไขจริง (ค่าต่างจากที่โหลดมา) — กันบันทึกซ้ำคนที่ไม่ได้แตะ
     const changed = rows.filter((r) => r.items.some((v, i) => v !== r.init[i]));
-    if (changed.length === 0) { setMsg("ยังไม่มีการแก้ไข"); return; }
+    const wordsChanged = JSON.stringify(words) !== JSON.stringify(initWords);
+    if (changed.length === 0 && !wordsChanged) { setMsg("ยังไม่มีการแก้ไข"); return; }
     start(async () => {
-      const res = await saveChecklist({ setNo, chapter, rows: changed.map((r) => ({ studentId: r.id, items: r.items })) });
-      if (res.ok) { setSaved(true); setRows((rs) => rs.map((r) => ({ ...r, init: r.items.slice(), existed: r.existed || r.items.some((v) => v) }))); setTimeout(() => setSaved(false), 2000); }
-      else setMsg(res.error ?? "บันทึกไม่สำเร็จ");
+      const res = await saveChecklist({ setNo, chapter, rows: changed.map((r) => ({ studentId: r.id, items: r.items })), words });
+      if (res.ok) {
+        setSaved(true);
+        setRows((rs) => rs.map((r) => ({ ...r, init: r.items.slice(), existed: r.existed || r.items.some((v) => v) })));
+        setInitWords(words.slice());
+        setTimeout(() => setSaved(false), 2000);
+      } else setMsg(res.error ?? "บันทึกไม่สำเร็จ");
     });
   };
 
   if (students.length === 0)
     return <div className="card p-6 text-center text-slate-400">ยังไม่มีนักเรียนในชั้นนี้ — เพิ่มที่เมนู “นักเรียน”</div>;
 
-  // วิเคราะห์ข้อสอบสด — นับจากคนที่มีคะแนน (กดแล้ว/เคยบันทึก)
+  // วิเคราะห์ข้อสอบสด
   const taken = rows.filter((r) => r.existed || r.items.some((v) => v));
   const nT = taken.length;
   const itemCorrect = Array.from({ length: N }, (_, i) => taken.reduce((a, r) => a + (r.items[i] ? 1 : 0), 0));
@@ -51,15 +59,38 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
   return (
     <div className="space-y-3">
       <SuccessOverlay show={saved} />
+
+      {/* ตั้งคำประจำข้อ (1–20) */}
+      <div className="card overflow-hidden">
+        <button onClick={() => setShowWords((v) => !v)} className="flex w-full items-center justify-between px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-white/5">
+          <span className="flex items-center gap-2"><Type size={16} className="text-indigo-300" /> ตั้งคำประจำข้อ (1–20) <span className="font-normal text-slate-400">— โชว์บนหัวตาราง + ในไฟล์ Excel</span></span>
+          <ChevronDown size={18} className={`transition ${showWords ? "rotate-180" : ""}`} />
+        </button>
+        {showWords && (
+          <div className="grid grid-cols-2 gap-2 border-t border-white/10 p-4 sm:grid-cols-3 lg:grid-cols-5">
+            {words.map((w, i) => (
+              <label key={i} className="flex items-center gap-1.5 text-xs">
+                <span className="w-9 shrink-0 text-right font-semibold text-slate-400">ข้อ {i + 1}</span>
+                <input value={w} onChange={(e) => setWords((ws) => ws.map((x, j) => (j === i ? e.target.value : x)))} placeholder="คำ"
+                  className="w-full rounded-md bg-slate-800 px-2 py-1 text-slate-100 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-indigo-400/40" />
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card overflow-auto max-h-[72vh]">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="text-slate-300">
-              <th className="sticky left-0 top-0 z-30 border-b border-white/10 bg-slate-950 px-3 py-2.5 text-left font-bold">ชื่อ-สกุล</th>
+              <th className="sticky left-0 top-0 z-30 border-b border-white/10 bg-slate-950 px-3 py-2 text-left font-bold">ชื่อ-สกุล</th>
               {Array.from({ length: N }, (_, i) => (
-                <th key={i} className={`sticky top-0 z-20 w-9 border-b border-white/10 bg-slate-950 px-0 py-2.5 text-center text-xs font-bold ${i > 0 && i % 5 === 0 ? "border-l border-white/15" : ""}`}>{i + 1}</th>
+                <th key={i} className={`sticky top-0 z-20 w-12 border-b border-white/10 bg-slate-950 px-0.5 py-2 text-center align-bottom text-xs font-bold ${i > 0 && i % 5 === 0 ? "border-l border-white/15" : ""}`}>
+                  <div>{i + 1}</div>
+                  {words[i] ? <div className="truncate text-[9px] font-normal leading-tight text-amber-300/90" title={words[i]}>{words[i]}</div> : null}
+                </th>
               ))}
-              <th className="sticky right-0 top-0 z-30 border-b border-l border-white/10 bg-slate-950 px-2 py-2.5 text-center font-bold">คะแนน</th>
+              <th className="sticky right-0 top-0 z-30 border-b border-l border-white/10 bg-slate-950 px-2 py-2 text-center font-bold">คะแนน</th>
             </tr>
           </thead>
           <tbody>
@@ -115,7 +146,12 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
             <tbody>
               <tr>
                 <th className="border border-white/10 bg-slate-900 px-2 py-1.5 text-right font-bold text-slate-300">ข้อ</th>
-                {Array.from({ length: N }, (_, i) => <th key={i} className="w-10 border border-white/10 bg-slate-900 px-0 py-1.5 font-bold">{i + 1}</th>)}
+                {Array.from({ length: N }, (_, i) => (
+                  <th key={i} className="w-10 border border-white/10 bg-slate-900 px-0.5 py-1.5 font-bold align-bottom">
+                    <div>{i + 1}</div>
+                    {words[i] ? <div className="truncate text-[9px] font-normal text-amber-300/90" title={words[i]}>{words[i]}</div> : null}
+                  </th>
+                ))}
               </tr>
               <tr>
                 <th className="border border-white/10 bg-slate-900 px-2 py-1.5 text-right font-semibold text-slate-300">ถูก (คน)</th>
@@ -140,5 +176,10 @@ export default function EntryGrid({ setNo, chapter, students, initial }: {
 function normalize(a: number[] | null | undefined): number[] {
   const out = Array(N).fill(0);
   if (Array.isArray(a)) for (let i = 0; i < N; i++) out[i] = a[i] ? 1 : 0;
+  return out;
+}
+function normalizeWords(a: string[] | null | undefined): string[] {
+  const out = Array(N).fill("");
+  if (Array.isArray(a)) for (let i = 0; i < N; i++) out[i] = typeof a[i] === "string" ? a[i] : "";
   return out;
 }
